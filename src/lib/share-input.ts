@@ -1,8 +1,8 @@
-import { normalizeInstagramUrl } from "./reel-url";
+import { isValidReelUrl } from "./reel-url";
 
 const URL_PATTERN = /https?:\/\/[^\s]+/g;
 
-export function extractSharedInstagramUrl(input: {
+export function extractSharedReelUrl(input: {
   url?: string | string[];
   title?: string | string[];
   text?: string | string[];
@@ -18,7 +18,7 @@ export function extractSharedInstagramUrl(input: {
     const trimmed = candidate.trim();
     if (!trimmed) continue;
 
-    if (normalizeInstagramUrl(trimmed)) {
+    if (isValidReelUrl(trimmed)) {
       return trimmed;
     }
 
@@ -26,7 +26,7 @@ export function extractSharedInstagramUrl(input: {
     if (matches) {
       for (const url of matches) {
         const stripped = url.replace(/[.,;)]+$/, "");
-        if (normalizeInstagramUrl(stripped)) {
+        if (isValidReelUrl(stripped)) {
           return stripped;
         }
       }

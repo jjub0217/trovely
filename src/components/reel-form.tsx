@@ -6,7 +6,7 @@ import { TagInput } from "./tag-input";
 import { CategorySelect } from "./category-select";
 import { createReel, updateReel } from "@/lib/actions";
 import { CategoryOption, ReelWithRelations } from "@/types";
-import { normalizeInstagramUrl } from "@/lib/reel-url";
+import { normalizeReelUrl } from "@/lib/reel-url";
 import { ReelThumbnail } from "./reel-thumbnail";
 
 export function ReelForm({
@@ -22,7 +22,7 @@ export function ReelForm({
 }) {
   const router = useRouter();
   const isEdit = !!reel;
-  const initialNormalizedUrl = reel ? normalizeInstagramUrl(reel.url) : null;
+  const initialNormalizedUrl = reel ? normalizeReelUrl(reel.url)?.url ?? null : null;
 
   const [url, setUrl] = useState(reel?.url || initialUrl || "");
   const [categoryIds, setCategoryIds] = useState<string[]>(reel?.categories.map(({ category }) => category.id) || []);
@@ -46,7 +46,7 @@ export function ReelForm({
       return;
     }
 
-    const normalizedUrl = normalizeInstagramUrl(url);
+    const normalizedUrl = normalizeReelUrl(url)?.url ?? null;
     if (!normalizedUrl) {
       setThumbnailPreview(null);
       setPreviewAttempted(false);
@@ -128,9 +128,9 @@ export function ReelForm({
       return;
     }
 
-    const normalizedUrl = normalizeInstagramUrl(url);
+    const normalizedUrl = normalizeReelUrl(url)?.url ?? null;
     if (!normalizedUrl) {
-      setError("올바른 인스타그램 릴스 URL을 입력해주세요");
+      setError("올바른 인스타그램 릴스 또는 유튜브 URL을 입력해주세요");
       return;
     }
     setSubmitting(true);
@@ -203,11 +203,11 @@ export function ReelForm({
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://www.instagram.com/reel/..."
+          placeholder="인스타그램 릴스 또는 유튜브 URL"
           className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-500"
         />
         <p className="mt-2 text-xs text-gray-500">
-          인스타그램 게시물 화면에서 주소를 복사한 링크만 저장할 수 있습니다.
+          인스타그램 릴스/포스트 또는 유튜브 영상/숏츠 링크를 저장할 수 있습니다.
         </p>
       </div>
 

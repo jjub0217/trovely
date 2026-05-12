@@ -1,4 +1,4 @@
-import { isValidInstagramUrl } from "./reel-url";
+import { isValidReelUrl } from "./reel-url";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
 import { cacheThumbnail } from "./thumbnail-cache";
 
@@ -63,7 +63,7 @@ async function extractViaOgTags(url: string): Promise<string | null> {
 }
 
 async function extractRaw(url: string): Promise<string | null> {
-  if (isValidInstagramUrl(url)) {
+  if (isValidReelUrl(url)) {
     return (
       (await extractViaMicrolink(url)) ??
       (await extractViaIframely(url)) ??

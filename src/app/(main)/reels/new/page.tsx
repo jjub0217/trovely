@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ReelForm } from "@/components/reel-form";
 import { getCategories } from "@/lib/actions";
-import { extractSharedInstagramUrl } from "@/lib/share-input";
+import { extractSharedReelUrl } from "@/lib/share-input";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ export default async function NewReelPage({
 }) {
   const params = (await searchParams) ?? {};
   const categories = await getCategories();
-  const initialUrl = extractSharedInstagramUrl(params);
+  const initialUrl = extractSharedReelUrl(params);
 
   return (
     <div>

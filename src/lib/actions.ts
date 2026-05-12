@@ -5,7 +5,7 @@ import { extractThumbnail } from "./og";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { requireAuth } from "./auth";
-import { normalizeInstagramUrl } from "./reel-url";
+import { normalizeReelUrl } from "./reel-url";
 import { normalizeTagName, normalizeTagNames } from "./tag-name";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
 import { cacheThumbnail } from "./thumbnail-cache";
@@ -29,10 +29,11 @@ export async function createReel(formData: {
   tagNames: string[];
 }) {
   const userId = await requireAuth();
-  const normalizedUrl = normalizeInstagramUrl(formData.url);
-  if (!normalizedUrl) {
-    return { error: "올바른 인스타그램 릴스 URL을 입력해주세요" };
+  const parsed = normalizeReelUrl(formData.url);
+  if (!parsed) {
+    return { error: "올바른 인스타그램 릴스 또는 유튜브 URL을 입력해주세요" };
   }
+  const { url: normalizedUrl, source } = parsed;
 
   const { memo, review, categoryIds, tagNames } = formData;
   const hasReview = Boolean(review?.trim());
@@ -64,6 +65,7 @@ export async function createReel(formData: {
     data: {
       url: normalizedUrl,
       thumbnail,
+      source,
       memo: memo || null,
       review: review || null,
       visited: hasReview,
@@ -93,10 +95,11 @@ export async function updateReel(
   }
 ) {
   const userId = await requireAuth();
-  const normalizedUrl = normalizeInstagramUrl(formData.url);
-  if (!normalizedUrl) {
-    return { error: "올바른 인스타그램 릴스 URL을 입력해주세요" };
+  const parsed = normalizeReelUrl(formData.url);
+  if (!parsed) {
+    return { error: "올바른 인스타그램 릴스 또는 유튜브 URL을 입력해주세요" };
   }
+  const { url: normalizedUrl, source } = parsed;
 
   const { memo, review, categoryIds, tagNames } = formData;
   const hasReview = Boolean(review?.trim());
@@ -137,6 +140,7 @@ export async function updateReel(
       data: {
         url: normalizedUrl,
         thumbnail,
+        source,
         memo: memo || null,
         review: review || null,
         visited: hasReview ? true : reel.visited,
