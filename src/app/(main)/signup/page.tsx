@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { GoogleOAuthButton } from "@/components/google-oauth-button";
+import { OAuthDivider } from "@/components/oauth-divider";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -143,6 +145,8 @@ export default function SignupPage() {
           {loading ? "가입 중..." : "회원가입"}
         </button>
       </form>
+      <OAuthDivider />
+      <GoogleOAuthButton />
       <p className="text-center text-sm text-gray-400 mt-6">
         이미 계정이 있으신가요?{" "}
         <Link href="/login" className="text-purple-400 hover:underline">

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { GoogleOAuthButton } from "@/components/google-oauth-button";
+import { OAuthDivider } from "@/components/oauth-divider";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -81,6 +83,8 @@ export default function LoginPage() {
           {loading ? "로그인 중..." : "로그인"}
         </button>
       </form>
+      <OAuthDivider />
+      <GoogleOAuthButton />
       <p className="text-center text-sm text-gray-400 mt-4">
         <Link href="/forgot-password" className="text-gray-400 hover:underline">
           비밀번호를 잊으셨나요?
