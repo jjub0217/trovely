@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleOAuthButton } from "@/components/google-oauth-button";
+import { KakaoOAuthButton } from "@/components/kakao-oauth-button";
 import { OAuthDivider } from "@/components/oauth-divider";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -84,7 +85,10 @@ export default function LoginPage() {
         </button>
       </form>
       <OAuthDivider />
-      <GoogleOAuthButton />
+      <div className="flex flex-col gap-2">
+        <GoogleOAuthButton />
+        <KakaoOAuthButton />
+      </div>
       <p className="text-center text-sm text-gray-400 mt-4">
         <Link href="/forgot-password" className="text-gray-400 hover:underline">
           비밀번호를 잊으셨나요?
