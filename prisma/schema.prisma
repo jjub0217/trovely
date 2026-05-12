@@ -6,6 +6,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ReelSource {
+  instagram
+  youtube
+}
+
 model Reel {
   id         String         @id @default(cuid())
   url        String
@@ -13,6 +18,7 @@ model Reel {
   memo       String?
   review     String?
   visited    Boolean        @default(false)
+  source     ReelSource     @default(instagram)
   userId     String
   categories ReelCategory[]
   tags       ReelTag[]
