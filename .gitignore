@@ -44,3 +44,6 @@ next-env.d.ts
 .omc/
 
 /src/generated/prisma
+
+# claude code worktrees
+/.claude/worktrees/
