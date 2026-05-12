@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { Star } from "lucide-react";
 import { ReelWithRelations } from "@/types";
 import { toggleVisited } from "@/lib/actions";
 import { ReelThumbnail } from "./reel-thumbnail";
@@ -50,11 +51,22 @@ export function ReelCard({ reel, priority = false }: { reel: ReelWithRelations; 
           />
           <button
             onClick={handleToggle}
-            className="absolute top-1.5 left-1.5 text-lg z-10"
-            style={{ textShadow: "0 0 4px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.6)" }}
+            aria-label={visited ? "방문 완료 해제" : "방문 완료 표시"}
+            className="absolute top-1.5 right-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 backdrop-blur-sm transition-colors hover:bg-black/70"
           >
-            {visited ? <span style={{ color: "#7eff50" }}>★</span> : <span className="text-white/60">☆</span>}
+            <Star
+              size={14}
+              className={visited ? "text-green-400" : "text-white/60"}
+              fill={visited ? "currentColor" : "none"}
+            />
           </button>
+          <span
+            className={`absolute bottom-1.5 right-1.5 z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white ${
+              reel.source === "youtube" ? "bg-[#ea333e]" : "bg-[#ff29fd]"
+            }`}
+          >
+            {reel.source === "youtube" ? "유튜브" : "인스타"}
+          </span>
         </div>
         <div className="p-3">
           <div className="flex gap-1 flex-wrap">
