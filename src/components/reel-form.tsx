@@ -12,17 +12,19 @@ import { ReelThumbnail } from "./reel-thumbnail";
 export function ReelForm({
   categories,
   reel,
+  initialUrl,
   backHref,
 }: {
   categories: CategoryOption[];
   reel?: ReelWithRelations;
+  initialUrl?: string;
   backHref?: string;
 }) {
   const router = useRouter();
   const isEdit = !!reel;
   const initialNormalizedUrl = reel ? normalizeInstagramUrl(reel.url) : null;
 
-  const [url, setUrl] = useState(reel?.url || "");
+  const [url, setUrl] = useState(reel?.url || initialUrl || "");
   const [categoryIds, setCategoryIds] = useState<string[]>(reel?.categories.map(({ category }) => category.id) || []);
   const [tags, setTags] = useState<string[]>(reel?.tags.map(({ tag }) => tag.name) || []);
   const [memo, setMemo] = useState(reel?.memo || "");
