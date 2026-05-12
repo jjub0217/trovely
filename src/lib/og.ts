@@ -1,6 +1,20 @@
-import { isValidReelUrl } from "./reel-url";
+import { isValidReelUrl, normalizeReelUrl } from "./reel-url";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
 import { cacheThumbnail } from "./thumbnail-cache";
+
+async function extractViaYoutubeOembed(url: string): Promise<string | null> {
+  try {
+    const apiUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+    const response = await fetch(apiUrl, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return normalizeThumbnailUrl(data?.thumbnail_url || null);
+  } catch {
+    return null;
+  }
+}
 
 async function extractViaMicrolink(url: string): Promise<string | null> {
   try {
@@ -63,6 +77,17 @@ async function extractViaOgTags(url: string): Promise<string | null> {
 }
 
 async function extractRaw(url: string): Promise<string | null> {
+  const parsed = normalizeReelUrl(url);
+
+  if (parsed?.source === "youtube") {
+    return (
+      (await extractViaYoutubeOembed(url)) ??
+      (await extractViaMicrolink(url)) ??
+      (await extractViaIframely(url)) ??
+      (await extractViaOgTags(url))
+    );
+  }
+
   if (isValidReelUrl(url)) {
     return (
       (await extractViaMicrolink(url)) ??
@@ -70,6 +95,7 @@ async function extractRaw(url: string): Promise<string | null> {
       (await extractViaOgTags(url))
     );
   }
+
   return (await extractViaOgTags(url)) ?? (await extractViaIframely(url));
 }
 
