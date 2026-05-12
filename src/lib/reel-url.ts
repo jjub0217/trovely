@@ -103,3 +103,8 @@ export function isValidReelUrl(input: string): boolean {
 export function detectSourceFromUrl(url: string): ReelSource | null {
   return normalizeReelUrl(url)?.source ?? null;
 }
+
+export function parseReelSource(value: string | undefined | null): ReelSource | undefined {
+  if (value === "instagram" || value === "youtube") return value;
+  return undefined;
+}

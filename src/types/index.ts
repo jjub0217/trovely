@@ -5,6 +5,7 @@ export type ReelWithRelations = {
   memo: string | null;
   review: string | null;
   visited: boolean;
+  source: "instagram" | "youtube";
   categories: { category: { id: string; name: string } }[];
   tags: { tag: { id: string; name: string } }[];
   createdAt: Date;

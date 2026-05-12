@@ -12,6 +12,7 @@ export function ReelGrid({
   initialCursor,
   search,
   categoryId,
+  source,
   status,
   sort,
 }: {
@@ -19,6 +20,7 @@ export function ReelGrid({
   initialCursor: string | null;
   search?: string;
   categoryId?: string;
+  source?: "instagram" | "youtube";
   status?: string;
   sort?: string;
 }) {
@@ -38,11 +40,11 @@ export function ReelGrid({
   const loadMore = useCallback(async () => {
     if (!cursor || loading) return;
     setLoading(true);
-    const result = await getReels({ search, categoryId, status, sort, cursor });
+    const result = await getReels({ search, categoryId, source, status, sort, cursor });
     setReels((prev) => [...prev, ...result.items]);
     setCursor(result.nextCursor);
     setLoading(false);
-  }, [cursor, loading, search, categoryId, status, sort]);
+  }, [cursor, loading, search, categoryId, source, status, sort]);
 
   useEffect(() => {
     const query = searchParams.toString();

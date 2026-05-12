@@ -5,7 +5,7 @@ import { extractThumbnail } from "./og";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { requireAuth } from "./auth";
-import { normalizeReelUrl } from "./reel-url";
+import { normalizeReelUrl, type ReelSource } from "./reel-url";
 import { normalizeTagName, normalizeTagNames } from "./tag-name";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
 import { cacheThumbnail } from "./thumbnail-cache";
@@ -186,6 +186,7 @@ export async function deleteReel(id: string) {
 export async function getReels({
   search,
   categoryId,
+  source,
   status,
   sort = "newest",
   cursor,
@@ -193,6 +194,7 @@ export async function getReels({
 }: {
   search?: string;
   categoryId?: string | "uncategorized";
+  source?: ReelSource;
   status?: string;
   sort?: string;
   cursor?: string;
@@ -200,6 +202,10 @@ export async function getReels({
 }) {
   const userId = await requireAuth();
   const where: Prisma.ReelWhereInput = { userId };
+
+  if (source) {
+    where.source = source;
+  }
 
   if (categoryId === "uncategorized") {
     where.categories = { none: {} };
