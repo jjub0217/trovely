@@ -1,5 +1,6 @@
 import { isValidInstagramUrl } from "./reel-url";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
+import { cacheThumbnail } from "./thumbnail-cache";
 
 async function extractViaMicrolink(url: string): Promise<string | null> {
   try {
@@ -9,6 +10,27 @@ async function extractViaMicrolink(url: string): Promise<string | null> {
     });
     const data = await response.json();
     return normalizeThumbnailUrl(data?.data?.image?.url || null);
+  } catch {
+    return null;
+  }
+}
+
+async function extractViaIframely(url: string): Promise<string | null> {
+  const apiKey = process.env.IFRAMELY_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const apiUrl = `https://iframe.ly/api/iframely?url=${encodeURIComponent(url)}&api_key=${apiKey}&iframe=0&omit_script=1`;
+    const response = await fetch(apiUrl, {
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await response.json();
+    const thumb =
+      data?.links?.thumbnail?.[0]?.href ??
+      data?.meta?.["og:image"] ??
+      data?.meta?.image ??
+      null;
+    return normalizeThumbnailUrl(thumb);
   } catch {
     return null;
   }
@@ -40,11 +62,20 @@ async function extractViaOgTags(url: string): Promise<string | null> {
   }
 }
 
-export async function extractThumbnail(url: string): Promise<string | null> {
+async function extractRaw(url: string): Promise<string | null> {
   if (isValidInstagramUrl(url)) {
-    const microlinkImage = await extractViaMicrolink(url);
-    if (microlinkImage) return microlinkImage;
-    return extractViaOgTags(url);
+    return (
+      (await extractViaMicrolink(url)) ??
+      (await extractViaIframely(url)) ??
+      (await extractViaOgTags(url))
+    );
   }
-  return extractViaOgTags(url);
+  return (await extractViaOgTags(url)) ?? (await extractViaIframely(url));
+}
+
+export async function extractThumbnail(url: string): Promise<string | null> {
+  const raw = await extractRaw(url);
+  if (!raw) return null;
+  const cached = await cacheThumbnail(raw, url);
+  return cached ?? raw;
 }

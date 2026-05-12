@@ -8,6 +8,17 @@ import { requireAuth } from "./auth";
 import { normalizeInstagramUrl } from "./reel-url";
 import { normalizeTagName, normalizeTagNames } from "./tag-name";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
+import { cacheThumbnail } from "./thumbnail-cache";
+
+async function resolveThumbnail(
+  raw: string | null | undefined,
+  stableKey: string
+): Promise<string | null> {
+  const normalized = normalizeThumbnailUrl(raw);
+  if (!normalized) return null;
+  const cached = await cacheThumbnail(normalized, stableKey);
+  return cached ?? normalized;
+}
 
 export async function createReel(formData: {
   url: string;
@@ -36,7 +47,7 @@ export async function createReel(formData: {
 
   const thumbnail =
     formData.thumbnail !== undefined
-      ? normalizeThumbnailUrl(formData.thumbnail)
+      ? await resolveThumbnail(formData.thumbnail, normalizedUrl)
       : await extractThumbnail(normalizedUrl);
 
   const tags = await Promise.all(
@@ -103,7 +114,7 @@ export async function updateReel(
 
   const thumbnail =
     formData.thumbnail !== undefined
-      ? normalizeThumbnailUrl(formData.thumbnail)
+      ? await resolveThumbnail(formData.thumbnail, normalizedUrl)
       : normalizedUrl !== reel.url
         ? await extractThumbnail(normalizedUrl)
         : reel.thumbnail;
