@@ -8,7 +8,7 @@ export function isRejectedThumbnailUrl(input: string | null | undefined): boolea
     const pathname = url.pathname.toLowerCase();
     const full = `${hostname}${pathname}`;
 
-    if (hostname === "scontent.cdninstagram.com") {
+    if (hostname === "cdninstagram.com" || hostname.endsWith(".cdninstagram.com")) {
       return false;
     }
 
