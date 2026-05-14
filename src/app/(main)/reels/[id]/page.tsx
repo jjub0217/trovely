@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { Play } from "lucide-react";
 import { getReel } from "@/lib/actions";
 import { ReelDetailActions } from "./detail-actions";
 import { DetailVisitedToggle } from "./detail-visited-toggle";
@@ -90,24 +91,41 @@ export default async function ReelDetailPage({
       </div>
       <div className="p-6">
         <div className="bg-gray-800 border border-gray-700 rounded-xl h-[48vh] min-h-80 max-h-[34rem] relative mb-5 overflow-hidden">
+          <a
+            href={reel.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute inset-0 block"
+            aria-label={reel.source === "youtube" ? "YouTube에서 재생" : "인스타그램에서 재생"}
+          >
+            <ReelThumbnail
+              src={reel.thumbnail}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="eager"
+              fetchPriority="high"
+              iconClassName="text-gray-500 text-3xl"
+              fallbackLabel="썸네일을 불러오지 못했어요"
+            />
+            {reel.source === "youtube" && reel.thumbnail && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+                  <Play size={28} className="ml-1 fill-white text-white" />
+                </div>
+              </div>
+            )}
+          </a>
           <DetailVisitedToggle reelId={reel.id} initialVisited={reel.visited} />
-          <ReelThumbnail
-            src={reel.thumbnail}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-            loading="eager"
-            fetchPriority="high"
-            iconClassName="text-gray-500 text-3xl"
-            fallbackLabel="썸네일을 불러오지 못했어요"
-          />
         </div>
         <a
           href={reel.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block bg-pink-600 py-3 rounded-xl text-center text-sm font-semibold mb-6"
+          className={`block py-3 rounded-xl text-center text-sm font-semibold text-white mb-6 ${
+            reel.source === "youtube" ? "bg-[#ea333e]" : "bg-[#ff29fd]"
+          }`}
         >
-          인스타그램에서 보기 ↗
+          {reel.source === "youtube" ? "YouTube에서 보기 ↗" : "인스타그램에서 보기 ↗"}
         </a>
         {reel.categories.length > 0 && (
           <div className="mb-4">

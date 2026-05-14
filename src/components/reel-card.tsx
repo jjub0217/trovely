@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Star } from "lucide-react";
+import { Play, Star } from "lucide-react";
 import { ReelWithRelations } from "@/types";
 import { toggleVisited } from "@/lib/actions";
 import { ReelThumbnail } from "./reel-thumbnail";
@@ -49,6 +49,13 @@ export function ReelCard({ reel, priority = false }: { reel: ReelWithRelations; 
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "low"}
           />
+          {reel.source === "youtube" && reel.thumbnail && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+                <Play size={13} className="ml-0.5 fill-white text-white" />
+              </div>
+            </div>
+          )}
           <button
             onClick={handleToggle}
             aria-label={visited ? "방문 완료 해제" : "방문 완료 표시"}
