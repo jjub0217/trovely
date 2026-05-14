@@ -10,7 +10,7 @@ import { BackToListButton } from "@/components/back-to-list-button";
 
 export const dynamic = "force-dynamic";
 
-const BASE_URL = "https://reelbox-pi.vercel.app";
+const BASE_URL = "https://trovely.vercel.app";
 
 export async function generateMetadata({
   params,

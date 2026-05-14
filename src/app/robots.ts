@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/reels/new", "/reels/*/edit", "/categories"],
     },
-    sitemap: "https://reelbox-pi.vercel.app/sitemap.xml",
+    sitemap: "https://trovely.vercel.app/sitemap.xml",
   };
 }

@@ -1,6 +1,6 @@
-# ReelBox
+# Trove
 
-인스타그램 릴스를 카테고리/태그/메모/후기와 함께 저장하고 검색할 수 있는 개인 웹 서비스.
+인스타그램 게시물과 유튜브 영상을 카테고리/태그/메모/후기와 함께 저장하고 검색할 수 있는 개인 웹 서비스.
 
 ## 기술 스택
 
@@ -12,8 +12,8 @@
 
 ## 배포 정보
 
-- GitHub: https://github.com/jjub0217/reelbox
-- Vercel: https://reelbox-pi.vercel.app/
+- GitHub: https://github.com/jjub0217/trove
+- Vercel: https://trovely.vercel.app/
 - Supabase Project ID: fjgrfpaatdjavqgzmpiv (Seoul 리전)
 - 런타임 DB: Transaction pooler (포트 6543)
 - 마이그레이션 DB: Session pooler (포트 5432)
@@ -24,7 +24,7 @@
 - `src/lib/actions.ts` — Server Actions (CRUD, 검색, 토글)
 - `src/lib/og.ts` — 썸네일 추출 (Instagram → Microlink.io API)
 - `src/components/` — 클라이언트 컴포넌트 (reel-card, reel-form, tag-input 등)
-- `src/app/page.tsx` — 메인 페이지 (검색, 카테고리 필터, 릴스 그리드)
+- `src/app/page.tsx` — 메인 페이지 (검색, 카테고리 필터, 콘텐츠 그리드)
 - `src/app/categories/` — 카테고리 관리 페이지
 
 ## DB 스키마 요약

@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const BASE_URL = "https://reelbox-pi.vercel.app";
+const BASE_URL = "https://trovely.vercel.app";
 
 export const metadata: Metadata = {
   title: {

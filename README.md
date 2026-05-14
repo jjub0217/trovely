@@ -6,9 +6,9 @@
 
 ## 배포
 
-- **프로덕션**: https://reelbox-pi.vercel.app
-- **어드민**: https://reelbox-pi.vercel.app/admin
-- **저장소**: https://github.com/jjub0217/reelbox
+- **프로덕션**: https://trovely.vercel.app
+- **어드민**: https://trovely.vercel.app/admin
+- **저장소**: https://github.com/jjub0217/trove
 
 ## 기술 스택
 
@@ -145,8 +145,8 @@ IFRAMELY_API_KEY=your-iframely-api-key
 ### 2. 설치
 
 ```bash
-git clone https://github.com/jjub0217/reelbox.git
-cd reelbox
+git clone https://github.com/jjub0217/trove.git
+cd trove
 npm install
 ```
 
