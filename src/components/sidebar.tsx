@@ -86,7 +86,7 @@ export function Sidebar({
           <div className="px-5 py-4 border-b border-gray-800 flex flex-col gap-3">
             <div className="flex items-center gap-2.5 text-gray-300">
               <Film size={16} className="text-gray-500" />
-              <span className="text-sm">내 릴스 {totalReels}개</span>
+              <span className="text-sm">내 콘텐츠 {totalReels}개</span>
             </div>
             <div className="flex items-center gap-2.5 text-gray-300">
               <Star size={16} className="text-gray-500" />
@@ -155,7 +155,7 @@ export function Sidebar({
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] px-6">
           <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-xs">
             <h3 className="text-base font-semibold mb-2">회원탈퇴</h3>
-            <p className="text-xs text-gray-500 mb-4">저장된 모든 릴스, 카테고리, 태그가 삭제되며 복구할 수 없습니다.</p>
+            <p className="text-xs text-gray-500 mb-4">저장된 모든 콘텐츠, 카테고리, 태그가 삭제되며 복구할 수 없습니다.</p>
             <p className="text-sm text-gray-400 mb-2">탈퇴 사유를 선택해주세요</p>
             <div className="flex flex-col gap-2 mb-4">
               {[

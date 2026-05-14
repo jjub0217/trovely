@@ -19,10 +19,12 @@ export function Header({
   return (
     <>
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-800">
-        <Link href="/"><img src="/logo.png" alt="ReelBox" className="h-8 w-8" /></Link>
+        <Link href="/" className="text-lg font-bold tracking-tight text-purple-100">
+          Trove
+        </Link>
         <div className="flex items-center gap-3">
           <Link href="/reels/new" className="bg-purple-600 px-4 py-2 rounded-lg text-sm">
-            + 릴스 추가
+            + 추가
           </Link>
           <button onClick={() => setSidebarOpen(true)} className="text-gray-400 hover:text-gray-200">
             <Menu size={22} />

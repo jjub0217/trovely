@@ -143,7 +143,7 @@ export function ReelGrid({
     const hasFilters = Boolean(search || categoryId || status);
     return (
       <div className="px-6 py-12 text-center text-gray-500 text-sm">
-        {hasFilters ? "조건에 맞는 릴스가 없습니다" : "저장된 릴스가 없습니다"}
+        {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
       </div>
     );
   }

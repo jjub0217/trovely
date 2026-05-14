@@ -83,7 +83,7 @@ export function WithdrawalTrendChart({ data }: { data: { date: string; count: nu
 export function ReelTrendChart({ data }: { data: { date: string; count: number }[] }) {
   return (
     <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-      <h4 className="text-sm font-semibold text-gray-300 mb-4">릴스 저장 추세 (최근 30일)</h4>
+      <h4 className="text-sm font-semibold text-gray-300 mb-4">콘텐츠 저장 추세 (최근 30일)</h4>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
@@ -102,7 +102,7 @@ export function ReelTrendChart({ data }: { data: { date: string; count: number }
             <Area
               type="monotone"
               dataKey="count"
-              name="릴스"
+              name="콘텐츠"
               stroke="#4ade80"
               fill="#4ade80"
               fillOpacity={0.2}

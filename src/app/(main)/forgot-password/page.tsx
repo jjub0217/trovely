@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
     return (
       <div className="flex flex-col justify-center min-h-screen px-8">
         <h1 className="text-2xl font-bold text-purple-100 text-center mb-4">
-          ReelBox
+          Trove
         </h1>
         <p className="text-center text-sm text-gray-300 mb-2">
           비밀번호 재설정 링크를 이메일로 보냈습니다.
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="flex flex-col justify-center min-h-screen px-8">
       <h1 className="text-2xl font-bold text-purple-100 text-center mb-2">
-        ReelBox
+        Trove
       </h1>
       <p className="text-center text-sm text-gray-400 mb-8">
         가입한 이메일을 입력하면 비밀번호 재설정 링크를 보내드립니다.

@@ -56,7 +56,7 @@ export function AdminSidebar({ items }: { items: NavItem[] }) {
       }`}
     >
       <div className={`flex items-center border-b border-gray-800 ${collapsed ? "justify-center p-3" : "justify-between p-5"}`}>
-        {!collapsed && <h1 className="text-lg font-bold text-purple-400">ReelBox Admin</h1>}
+        {!collapsed && <h1 className="text-lg font-bold text-purple-400">Trove Admin</h1>}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
@@ -157,13 +157,13 @@ export function AdminSidebar({ items }: { items: NavItem[] }) {
       <div className="p-2 border-t border-gray-800">
         <Link
           href="/"
-          title={collapsed ? "ReelBox" : undefined}
+          title={collapsed ? "Trove" : undefined}
           className={`flex items-center gap-2 rounded-lg text-sm text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors ${
             collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2"
           }`}
         >
           <ArrowLeft size={16} />
-          {!collapsed && "ReelBox"}
+          {!collapsed && "Trove"}
         </Link>
       </div>
     </aside>

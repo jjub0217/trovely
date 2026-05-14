@@ -8,7 +8,7 @@ const TABS = [
   { key: "signup", label: "가입 추세" },
   { key: "withdrawal", label: "탈퇴 추세" },
   { key: "reason", label: "탈퇴 사유" },
-  { key: "reel", label: "릴스 추세" },
+  { key: "reel", label: "콘텐츠 추세" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];

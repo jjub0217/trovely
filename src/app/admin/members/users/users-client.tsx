@@ -187,7 +187,7 @@ export function UsersClient({
                   <ColumnHeader label="가입일" tooltip="사용자 증가 추세 파악" />
                 </th>
                 <th className="text-right px-4 py-3 text-gray-400 font-medium">
-                  <ColumnHeader label="릴스" tooltip="활동량 지표 — 많이 저장할수록 활성 사용자" align="right" />
+                  <ColumnHeader label="콘텐츠" tooltip="활동량 지표 — 많이 저장할수록 활성 사용자" align="right" />
                 </th>
                 <th className="text-right px-4 py-3 text-gray-400 font-medium">
                   <ColumnHeader label="카테고리" tooltip="서비스 활용도 — 분류를 얼마나 세분화했는지" align="right" />

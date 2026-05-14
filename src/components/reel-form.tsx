@@ -22,18 +22,28 @@ export function ReelForm({
 }) {
   const router = useRouter();
   const isEdit = !!reel;
-  const initialNormalizedUrl = reel ? normalizeReelUrl(reel.url)?.url ?? null : null;
+  const initialNormalizedUrl = reel
+    ? (normalizeReelUrl(reel.url)?.url ?? null)
+    : null;
 
   const [url, setUrl] = useState(reel?.url || initialUrl || "");
-  const [categoryIds, setCategoryIds] = useState<string[]>(reel?.categories.map(({ category }) => category.id) || []);
-  const [tags, setTags] = useState<string[]>(reel?.tags.map(({ tag }) => tag.name) || []);
+  const [categoryIds, setCategoryIds] = useState<string[]>(
+    reel?.categories.map(({ category }) => category.id) || [],
+  );
+  const [tags, setTags] = useState<string[]>(
+    reel?.tags.map(({ tag }) => tag.name) || [],
+  );
   const [memo, setMemo] = useState(reel?.memo || "");
   const [review, setReview] = useState(reel?.review || "");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitMode, setSubmitMode] = useState<"home" | "continue">("home");
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(reel?.thumbnail || null);
-  const [previewAttempted, setPreviewAttempted] = useState(Boolean(reel?.thumbnail));
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
+    reel?.thumbnail || null,
+  );
+  const [previewAttempted, setPreviewAttempted] = useState(
+    Boolean(reel?.thumbnail),
+  );
   const [previewLoading, setPreviewLoading] = useState(false);
   const [manualThumbnail, setManualThumbnail] = useState<string | null>(null);
   const [manualThumbnailName, setManualThumbnailName] = useState("");
@@ -67,7 +77,9 @@ export function ReelForm({
 
     const timeout = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/og?url=${encodeURIComponent(normalizedUrl)}`);
+        const res = await fetch(
+          `/api/og?url=${encodeURIComponent(normalizedUrl)}`,
+        );
         const data = await res.json();
         setThumbnailPreview(data.thumbnail || null);
         setPreviewAttempted(true);
@@ -124,13 +136,13 @@ export function ReelForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!url.trim()) {
-      setError("릴스 URL을 입력해주세요");
+      setError("콘텐츠 URL을 입력해주세요");
       return;
     }
 
     const normalizedUrl = normalizeReelUrl(url)?.url ?? null;
     if (!normalizedUrl) {
-      setError("올바른 인스타그램 릴스 또는 유튜브 URL을 입력해주세요");
+      setError("올바른 인스타그램 게시물 또는 유튜브 영상 URL을 입력해주세요");
       return;
     }
     setSubmitting(true);
@@ -138,7 +150,8 @@ export function ReelForm({
 
     const formData = {
       url: normalizedUrl,
-      thumbnail: manualThumbnail ?? (previewAttempted ? thumbnailPreview : undefined),
+      thumbnail:
+        manualThumbnail ?? (previewAttempted ? thumbnailPreview : undefined),
       memo: memo.trim() || undefined,
       review: review.trim() || undefined,
       categoryIds,
@@ -156,7 +169,11 @@ export function ReelForm({
     }
 
     if (isEdit) {
-      router.push(backHref ? `/reels/${reel!.id}?back=${encodeURIComponent(backHref)}` : `/reels/${reel!.id}`);
+      router.push(
+        backHref
+          ? `/reels/${reel!.id}?back=${encodeURIComponent(backHref)}`
+          : `/reels/${reel!.id}`,
+      );
       return;
     }
 
@@ -198,16 +215,18 @@ export function ReelForm({
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-5">
       <div>
-        <label className="text-xs text-gray-400 font-semibold mb-2 block">릴스 URL</label>
+        <label className="text-xs text-gray-400 font-semibold mb-2 block">
+          콘텐츠 URL
+        </label>
         <input
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="인스타그램 릴스 또는 유튜브 URL"
+          placeholder="인스타그램 게시물 또는 유튜브 영상 URL"
           className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-500"
         />
         <p className="mt-2 text-xs text-gray-500">
-          인스타그램 릴스/포스트 또는 유튜브 영상/숏츠 링크를 저장할 수 있습니다.
+          인스타그램 게시물 또는 유튜브 영상/숏츠 링크를 저장할 수 있습니다.
         </p>
       </div>
 
@@ -218,8 +237,12 @@ export function ReelForm({
               <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gray-700/90 px-4 text-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-500 border-t-purple-400" />
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-200">썸네일을 불러오는 중입니다</p>
-                  <p className="text-xs text-gray-400">추출까지 몇 초 정도 걸릴 수 있어요.</p>
+                  <p className="text-sm font-medium text-gray-200">
+                    썸네일을 불러오는 중입니다
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    추출까지 몇 초 정도 걸릴 수 있어요.
+                  </p>
                 </div>
               </div>
             ) : (
@@ -229,7 +252,9 @@ export function ReelForm({
                 className="h-full w-full object-cover"
                 loading="eager"
                 fetchPriority="high"
-                fallbackLabel={"썸네일을 불러오지 못했어요.\n직접 이미지를 추가할 수 있어요."}
+                fallbackLabel={
+                  "썸네일을 불러오지 못했어요.\n직접 이미지를 추가할 수 있어요."
+                }
               />
             )}
             {!previewLoading && (
@@ -251,8 +276,12 @@ export function ReelForm({
         <div className="rounded-xl border border-gray-700 bg-gray-800/70 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-gray-300">직접 추가한 썸네일</p>
-              <p className="mt-1 truncate text-xs text-gray-500">{manualThumbnailName}</p>
+              <p className="text-xs font-semibold text-gray-300">
+                직접 추가한 썸네일
+              </p>
+              <p className="mt-1 truncate text-xs text-gray-500">
+                {manualThumbnailName}
+              </p>
             </div>
             <button
               type="button"
@@ -266,17 +295,27 @@ export function ReelForm({
       ) : null}
 
       <div>
-        <label className="text-xs text-gray-400 font-semibold mb-2 block">카테고리</label>
-        <CategorySelect categories={categories} value={categoryIds} onChange={setCategoryIds} />
+        <label className="text-xs text-gray-400 font-semibold mb-2 block">
+          카테고리
+        </label>
+        <CategorySelect
+          categories={categories}
+          value={categoryIds}
+          onChange={setCategoryIds}
+        />
       </div>
 
       <div>
-        <label className="text-xs text-gray-400 font-semibold mb-2 block">태그</label>
+        <label className="text-xs text-gray-400 font-semibold mb-2 block">
+          태그
+        </label>
         <TagInput value={tags} onChange={setTags} />
       </div>
 
       <div>
-        <label className="text-xs text-gray-400 font-semibold mb-2 block">메모</label>
+        <label className="text-xs text-gray-400 font-semibold mb-2 block">
+          메모
+        </label>
         <textarea
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
@@ -287,7 +326,9 @@ export function ReelForm({
       </div>
 
       <div>
-        <label className="text-xs text-gray-400 font-semibold mb-2 block">후기</label>
+        <label className="text-xs text-gray-400 font-semibold mb-2 block">
+          후기
+        </label>
         <textarea
           id="review"
           value={review}

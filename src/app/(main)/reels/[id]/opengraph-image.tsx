@@ -14,7 +14,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     return new ImageResponse(
       (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", background: "#111827", color: "#9ca3af", fontSize: 32 }}>
-          릴스를 찾을 수 없습니다
+          콘텐츠를 찾을 수 없습니다
         </div>
       ),
       { ...size }
@@ -87,7 +87,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
           {/* Branding */}
           <div style={{ display: "flex", alignItems: "center", marginTop: "auto" }}>
-            <span style={{ color: "#a78bfa", fontSize: 32, fontWeight: 700 }}>ReelBox</span>
+            <span style={{ color: "#a78bfa", fontSize: 32, fontWeight: 700 }}>Trove</span>
           </div>
         </div>
       </div>

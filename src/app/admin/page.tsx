@@ -23,8 +23,8 @@ export default async function AdminDashboard() {
         <StatCard icon={UserPlus} label="오늘 가입" value={memberStats.todaySignups} />
         <StatCard icon={TrendingUp} label="이번 주 가입" value={memberStats.weekSignups} />
         <StatCard icon={UserX} label="탈퇴 회원" value={memberStats.totalWithdrawals} />
-        <StatCard icon={Film} label="전체 릴스" value={dashboardStats.totalReels} />
-        <StatCard icon={FilePlus} label="오늘 릴스" value={dashboardStats.todayReels} />
+        <StatCard icon={Film} label="전체 콘텐츠" value={dashboardStats.totalReels} />
+        <StatCard icon={FilePlus} label="오늘 콘텐츠" value={dashboardStats.todayReels} />
       </div>
 
       <DashboardCharts

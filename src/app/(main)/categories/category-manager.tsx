@@ -55,7 +55,7 @@ export function CategoryManager({ categories }: { categories: CategoryOption[] }
 
   async function handleDelete(id: string, name: string) {
     if (deletingId) return;
-    if (!confirm(`"${name}" 카테고리를 삭제하시겠습니까?\n이 카테고리의 릴스는 미분류로 변경됩니다.`)) return;
+    if (!confirm(`"${name}" 카테고리를 삭제하시겠습니까?\n이 카테고리의 콘텐츠는 미분류로 변경됩니다.`)) return;
     setDeletingId(id);
     setError("");
     const result = await deleteCategory(id);

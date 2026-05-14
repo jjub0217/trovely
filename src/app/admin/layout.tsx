@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Admin | ReelBox",
+  title: "Admin | Trove",
 };
 
 export const dynamic = "force-dynamic";

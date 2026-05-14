@@ -53,7 +53,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col justify-center min-h-screen px-8">
-      <h1 className="text-2xl font-bold text-purple-100 text-center mb-8">ReelBox</h1>
+      <h1 className="text-2xl font-bold text-purple-100 text-center mb-8">Trove</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
           <input

@@ -31,7 +31,7 @@ export async function createReel(formData: {
   const userId = await requireAuth();
   const parsed = normalizeReelUrl(formData.url);
   if (!parsed) {
-    return { error: "올바른 인스타그램 릴스 또는 유튜브 URL을 입력해주세요" };
+    return { error: "올바른 인스타그램 게시물 또는 유튜브 영상 URL을 입력해주세요" };
   }
   const { url: normalizedUrl, source } = parsed;
 
@@ -43,7 +43,7 @@ export async function createReel(formData: {
     where: { url_userId: { url: normalizedUrl, userId } },
   });
   if (existing) {
-    return { error: "이미 저장된 릴스입니다" };
+    return { error: "이미 저장된 콘텐츠입니다" };
   }
 
   const thumbnail =
@@ -97,7 +97,7 @@ export async function updateReel(
   const userId = await requireAuth();
   const parsed = normalizeReelUrl(formData.url);
   if (!parsed) {
-    return { error: "올바른 인스타그램 릴스 또는 유튜브 URL을 입력해주세요" };
+    return { error: "올바른 인스타그램 게시물 또는 유튜브 영상 URL을 입력해주세요" };
   }
   const { url: normalizedUrl, source } = parsed;
 
@@ -106,13 +106,13 @@ export async function updateReel(
   const normalizedTagNames = normalizeTagNames(tagNames);
 
   const reel = await prisma.reel.findFirst({ where: { id, userId } });
-  if (!reel) return { error: "릴스를 찾을 수 없습니다" };
+  if (!reel) return { error: "콘텐츠를 찾을 수 없습니다" };
 
   const existing = await prisma.reel.findFirst({
     where: { url: normalizedUrl, userId, NOT: { id } },
   });
   if (existing) {
-    return { error: "이미 저장된 릴스입니다" };
+    return { error: "이미 저장된 콘텐츠입니다" };
   }
 
   const thumbnail =
@@ -165,7 +165,7 @@ export async function toggleVisited(id: string) {
     where: { id, userId },
     select: { visited: true },
   });
-  if (!reel) return { error: "릴스를 찾을 수 없습니다" };
+  if (!reel) return { error: "콘텐츠를 찾을 수 없습니다" };
 
   await prisma.reel.update({ where: { id }, data: { visited: !reel.visited } });
   revalidatePath("/");
@@ -176,7 +176,7 @@ export async function toggleVisited(id: string) {
 export async function deleteReel(id: string) {
   const userId = await requireAuth();
   const reel = await prisma.reel.findFirst({ where: { id, userId } });
-  if (!reel) return { error: "릴스를 찾을 수 없습니다" };
+  if (!reel) return { error: "콘텐츠를 찾을 수 없습니다" };
 
   await prisma.reel.delete({ where: { id } });
   revalidatePath("/");

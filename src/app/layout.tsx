@@ -5,10 +5,10 @@ const BASE_URL = "https://reelbox-pi.vercel.app";
 
 export const metadata: Metadata = {
   title: {
-    default: "ReelBox",
-    template: "%s | ReelBox",
+    default: "Trove",
+    template: "%s | Trove",
   },
-  description: "인스타그램 릴스를 카테고리, 태그, 메모와 함께 저장하고 검색할 수 있는 개인 웹 서비스",
+  description: "인스타그램 게시물과 유튜브 영상을 카테고리, 태그, 메모와 함께 저장하고 검색할 수 있는 개인 웹 서비스",
   metadataBase: new URL(BASE_URL),
   manifest: "/manifest.json",
   verification: {
@@ -16,17 +16,17 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "ReelBox",
-    title: "ReelBox",
-    description: "인스타그램 릴스를 카테고리, 태그, 메모와 함께 저장하고 검색할 수 있는 개인 웹 서비스",
+    siteName: "Trove",
+    title: "Trove",
+    description: "인스타그램 게시물과 유튜브 영상을 카테고리, 태그, 메모와 함께 저장하고 검색할 수 있는 개인 웹 서비스",
     url: BASE_URL,
     locale: "ko_KR",
     images: [{ url: `${BASE_URL}/og-image.png`, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary",
-    title: "ReelBox",
-    description: "인스타그램 릴스를 카테고리, 태그, 메모와 함께 저장하고 검색할 수 있는 개인 웹 서비스",
+    title: "Trove",
+    description: "인스타그램 게시물과 유튜브 영상을 카테고리, 태그, 메모와 함께 저장하고 검색할 수 있는 개인 웹 서비스",
   },
   icons: {
     icon: "/icon-32.png",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "ReelBox",
+    title: "Trove",
   },
 };
 

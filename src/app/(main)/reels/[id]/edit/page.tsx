@@ -30,7 +30,7 @@ export default async function EditReelPage({
         >
           ←
         </Link>
-        <h1 className="text-lg font-bold text-purple-100">릴스 수정</h1>
+        <h1 className="text-lg font-bold text-purple-100">콘텐츠 수정</h1>
       </div>
       <ReelForm categories={categories} reel={reel} backHref={back} />
     </div>

@@ -27,7 +27,7 @@ export async function generateMetadata({
     categories.length > 0 ? `[${categories.join(", ")}]` : "",
     tags.length > 0 ? tags.join(", ") : "",
     reel.memo || "",
-  ].filter(Boolean).join(" · ") || "저장된 릴스";
+  ].filter(Boolean).join(" · ") || "저장된 콘텐츠";
 
   return {
     title: description.slice(0, 60),
@@ -65,7 +65,7 @@ export default async function ReelDetailPage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
-    name: categories.length > 0 ? categories.join(", ") : "릴스",
+    name: categories.length > 0 ? categories.join(", ") : "콘텐츠",
     description: reel.memo || undefined,
     url: `${BASE_URL}/reels/${id}`,
     image: reel.thumbnail || undefined,
@@ -74,7 +74,7 @@ export default async function ReelDetailPage({
     keywords: tags.join(", ") || undefined,
     publisher: {
       "@type": "Organization",
-      name: "ReelBox",
+      name: "Trove",
       url: BASE_URL,
     },
   };

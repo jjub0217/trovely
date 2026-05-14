@@ -1,7 +1,7 @@
 {
-  "name": "ReelBox",
-  "short_name": "ReelBox",
-  "description": "인스타그램 릴스 스마트 저장 & 검색",
+  "name": "Trove",
+  "short_name": "Trove",
+  "description": "인스타그램 게시물과 유튜브 영상 스마트 저장 & 검색",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#030712",

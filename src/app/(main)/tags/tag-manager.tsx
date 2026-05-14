@@ -97,7 +97,7 @@ export function TagManager({ tags }: { tags: TagOption[] }) {
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`"${name}" 태그를 삭제하시겠습니까?\n이 태그가 연결된 릴스에서는 태그만 제거됩니다.`)) return;
+    if (!confirm(`"${name}" 태그를 삭제하시겠습니까?\n이 태그가 연결된 콘텐츠에서는 태그만 제거됩니다.`)) return;
 
     const result = await deleteTag(id);
     if (result.error) {

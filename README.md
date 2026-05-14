@@ -1,8 +1,8 @@
-# ReelBox
+# Trove
 
-인스타그램 릴스를 카테고리, 태그, 메모, 후기와 함께 저장하고 검색할 수 있는 웹 서비스.
+인스타그램 게시물과 유튜브 영상을 카테고리, 태그, 메모, 후기와 함께 저장하고 검색할 수 있는 개인 웹 서비스.
 
-> 다시 보고 싶은 릴스를 그때그때 찜해두고, 나중에 카테고리·태그·키워드로 한눈에 찾아보기 위해 만든 개인용 도구.
+> 다시 보고 싶은 인스타그램 게시물과 유튜브 영상을 그때그때 찜해두고, 나중에 카테고리·태그·키워드로 한눈에 찾아보기 위해 만든 개인용 도구.
 
 ## 배포
 
@@ -25,7 +25,7 @@
 
 ### 사용자
 
-- 릴스 URL 저장 (썸네일 자동 추출 + Supabase Storage에 영구 캐싱)
+- 콘텐츠 URL 저장 (썸네일 자동 추출 + Supabase Storage에 영구 캐싱)
 - 카테고리 다중 선택 / 태그 / 메모 / 후기
 - 방문 완료 별(★) 토글
 - 다중 키워드 AND 검색 (메모, 후기, 태그, 카테고리 동시 매칭)
@@ -46,7 +46,7 @@
 인스타그램 CDN의 썸네일 URL은 만료 시간과 지역 정보가 서명에 박혀 있어, 며칠 지나거나 다른 지역에서 열면 깨집니다. 이를 막기 위해 추출한 이미지를 곧바로 Supabase Storage에 복사해서 영구 URL로 저장합니다.
 
 ```
-[릴스 추가]
+[콘텐츠 추가]
    ↓
 [1] Microlink로 썸네일 추출 시도
    ↓ 실패 시
@@ -67,12 +67,12 @@
 src/
 ├── app/
 │   ├── (main)/                # 메인 앱 (max-w-420px 모바일 레이아웃)
-│   │   ├── page.tsx           # 메인 페이지 (검색, 필터, 릴스 그리드)
+│   │   ├── page.tsx           # 메인 페이지 (검색, 필터, 콘텐츠 그리드)
 │   │   ├── login/             # 로그인
 │   │   ├── signup/            # 회원가입
 │   │   ├── forgot-password/   # 비밀번호 재설정
 │   │   ├── reels/
-│   │   │   ├── new/           # 릴스 추가
+│   │   │   ├── new/           # 콘텐츠 추가
 │   │   │   └── [id]/          # 상세 / 수정
 │   │   ├── archive/           # 아카이브
 │   │   ├── tags/              # 태그 관리
@@ -90,13 +90,13 @@ src/
 │   ├── db.ts                  # Prisma 클라이언트 (pg Pool + SSL)
 │   ├── og.ts                  # 썸네일 추출 (Microlink/iframely/OG)
 │   ├── thumbnail-cache.ts     # Supabase Storage 캐싱
-│   ├── reel-url.ts            # 인스타그램 URL 정규화
+│   ├── reel-url.ts            # 콘텐츠 URL 정규화 (인스타/유튜브)
 │   └── supabase/              # 서버/클라이언트 Supabase 인스턴스
 ├── middleware.ts              # 인증 미들웨어
 └── types/                     # 공용 TypeScript 타입
 
 scripts/
-└── recache-thumbnails.ts      # 기존 릴스 썸네일 일괄 재캐싱 스크립트
+└── recache-thumbnails.ts      # 기존 콘텐츠 썸네일 일괄 재캐싱 스크립트
 
 prisma/
 └── schema.prisma              # DB 스키마 정의
@@ -106,7 +106,7 @@ prisma/
 
 | 모델 | 설명 |
 |---|---|
-| `Reel` | 릴스 본체 (url, thumbnail, memo, review, visited, userId) |
+| `Reel` | 콘텐츠 본체 (url, thumbnail, memo, review, visited, userId) |
 | `Category` | 카테고리 (사용자별 unique) |
 | `Tag` | 태그 (사용자별 unique) |
 | `ReelCategory`, `ReelTag` | N:M 매핑 테이블 |
@@ -183,9 +183,9 @@ http://localhost:3000 접속.
 | `npm run build` | 프로덕션 빌드 |
 | `npm run start` | 빌드 결과로 서버 실행 |
 | `npm run lint` | ESLint 검사 |
-| `npm run recache-thumbnails` | 기존 릴스 썸네일을 Storage로 일괄 이전 (최신 50개씩, 매일 실행 권장) |
+| `npm run recache-thumbnails` | 기존 콘텐츠 썸네일을 Storage로 일괄 이전 (최신 50개씩, 매일 실행 권장) |
 
-`recache-thumbnails`는 외부 라이브러리가 아니라 [`scripts/recache-thumbnails.ts`](scripts/recache-thumbnails.ts)를 실행하는 별명입니다. Microlink 무료 한도(50/일)에 맞춰 한 번에 50개씩만 처리하므로, 릴스가 많다면 며칠에 걸쳐 매일 한 번씩 실행하면 됩니다.
+`recache-thumbnails`는 외부 라이브러리가 아니라 [`scripts/recache-thumbnails.ts`](scripts/recache-thumbnails.ts)를 실행하는 별명입니다. Microlink 무료 한도(50/일)에 맞춰 한 번에 50개씩만 처리하므로, 콘텐츠가 많다면 며칠에 걸쳐 매일 한 번씩 실행하면 됩니다.
 
 ## 배포 시 주의사항
 
@@ -197,7 +197,7 @@ http://localhost:3000 접속.
 
 ## 향후 계획
 
-- 릴스 자동 정리 (오래된/중복/깨진 항목)
+- 콘텐츠 자동 정리 (오래된/중복/깨진 항목)
 - 카테고리별 통계 / 시청 패턴 차트
 - PWA 강화 (오프라인 캐싱)
 - 외부 공유 링크 생성

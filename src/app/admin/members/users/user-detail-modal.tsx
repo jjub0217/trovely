@@ -106,7 +106,7 @@ export function UserDetailModal({
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-gray-900 rounded-lg p-3">
                   <p className="text-2xl font-bold">{data.reels.length}</p>
-                  <p className="text-xs text-gray-400 mt-1">릴스</p>
+                  <p className="text-xs text-gray-400 mt-1">콘텐츠</p>
                 </div>
                 <div className="bg-gray-900 rounded-lg p-3">
                   <p className="text-2xl font-bold">{data.categories.length}</p>
@@ -127,10 +127,10 @@ export function UserDetailModal({
 
               <div>
                 <h4 className="text-sm font-medium text-gray-400 mb-3">
-                  릴스 목록 (최근 50개)
+                  콘텐츠 목록 (최근 50개)
                 </h4>
                 {data.reels.length === 0 ? (
-                  <p className="text-sm text-gray-500">저장된 릴스가 없습니다</p>
+                  <p className="text-sm text-gray-500">저장된 콘텐츠가 없습니다</p>
                 ) : (
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {data.reels.map((reel) => (
