@@ -19,10 +19,10 @@ export function Header({
   return (
     <>
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-800">
-        <Link href="/" aria-label="Trove" className="flex items-center gap-2">
+        <Link href="/" aria-label="Trovely" className="flex items-center gap-2">
           <img src="/logo.png" alt="" className="h-8 w-8" />
           <span className="text-lg font-bold tracking-tight text-purple-100">
-            Trove
+            Trovely
           </span>
         </Link>
         <div className="flex items-center gap-3">

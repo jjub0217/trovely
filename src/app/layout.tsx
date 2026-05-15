@@ -5,8 +5,8 @@ const BASE_URL = "https://trovely.vercel.app";
 
 export const metadata: Metadata = {
   title: {
-    default: "Trove",
-    template: "%s | Trove",
+    default: "Trovely",
+    template: "%s | Trovely",
   },
   description: "인스타그램 게시물과 유튜브 영상을 카테고리, 태그, 메모와 함께 저장하고 검색할 수 있는 개인 웹 서비스",
   metadataBase: new URL(BASE_URL),
@@ -16,8 +16,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "Trove",
-    title: "Trove",
+    siteName: "Trovely",
+    title: "Trovely",
     description: "인스타그램 게시물과 유튜브 영상을 카테고리, 태그, 메모와 함께 저장하고 검색할 수 있는 개인 웹 서비스",
     url: BASE_URL,
     locale: "ko_KR",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Trove",
+    title: "Trovely",
     description: "인스타그램 게시물과 유튜브 영상을 카테고리, 태그, 메모와 함께 저장하고 검색할 수 있는 개인 웹 서비스",
   },
   icons: {
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Trove",
+    title: "Trovely",
   },
 };
 

@@ -1,4 +1,4 @@
-# Trove
+# Trovely
 
 인스타그램 게시물과 유튜브 영상을 카테고리, 태그, 메모, 후기와 함께 저장하고 검색할 수 있는 개인 웹 서비스.
 
@@ -8,7 +8,7 @@
 
 - **프로덕션**: https://trovely.vercel.app
 - **어드민**: https://trovely.vercel.app/admin
-- **저장소**: https://github.com/jjub0217/trove
+- **저장소**: https://github.com/jjub0217/trovely
 
 ## 기술 스택
 
@@ -145,8 +145,8 @@ IFRAMELY_API_KEY=your-iframely-api-key
 ### 2. 설치
 
 ```bash
-git clone https://github.com/jjub0217/trove.git
-cd trove
+git clone https://github.com/jjub0217/trovely.git
+cd trovely
 npm install
 ```
 

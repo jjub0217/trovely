@@ -87,7 +87,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
           {/* Branding */}
           <div style={{ display: "flex", alignItems: "center", marginTop: "auto" }}>
-            <span style={{ color: "#a78bfa", fontSize: 32, fontWeight: 700 }}>Trove</span>
+            <span style={{ color: "#a78bfa", fontSize: 32, fontWeight: 700 }}>Trovely</span>
           </div>
         </div>
       </div>

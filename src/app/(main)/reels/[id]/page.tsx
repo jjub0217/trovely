@@ -74,7 +74,7 @@ export default async function ReelDetailPage({
     keywords: tags.join(", ") || undefined,
     publisher: {
       "@type": "Organization",
-      name: "Trove",
+      name: "Trovely",
       url: BASE_URL,
     },
   };

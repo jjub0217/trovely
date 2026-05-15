@@ -1,4 +1,4 @@
-# Trove
+# Trovely
 
 인스타그램 게시물과 유튜브 영상을 카테고리/태그/메모/후기와 함께 저장하고 검색할 수 있는 개인 웹 서비스.
 
@@ -12,7 +12,7 @@
 
 ## 배포 정보
 
-- GitHub: https://github.com/jjub0217/trove
+- GitHub: https://github.com/jjub0217/trovely
 - Vercel: https://trovely.vercel.app/
 - Supabase Project ID: fjgrfpaatdjavqgzmpiv (Seoul 리전)
 - 런타임 DB: Transaction pooler (포트 6543)

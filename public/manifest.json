@@ -1,6 +1,6 @@
 {
-  "name": "Trove",
-  "short_name": "Trove",
+  "name": "Trovely",
+  "short_name": "Trovely",
   "description": "인스타그램 게시물과 유튜브 영상 스마트 저장 & 검색",
   "start_url": "/",
   "display": "standalone",

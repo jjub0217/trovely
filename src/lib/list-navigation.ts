@@ -1,4 +1,4 @@
-export const LIST_RETURN_KEY = "trove:list-return";
+export const LIST_RETURN_KEY = "trovely:list-return";
 
 export type ListReturnState = {
   url: string;
