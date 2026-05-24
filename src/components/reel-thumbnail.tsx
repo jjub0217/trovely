@@ -97,6 +97,8 @@ export function ReelThumbnail({
   }
 
   return (
+    // CDN/Supabase 썸네일이라 의도적으로 <img> 사용 (next/image 미적용 — 프로젝트 컨벤션)
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       ref={imgRef}
       src={currentSrc}

@@ -38,7 +38,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         {/* Thumbnail */}
         <div style={{ display: "flex", width: 340, height: 510, borderRadius: 20, overflow: "hidden", flexShrink: 0 }}>
           {reel.thumbnail ? (
-            <img src={reel.thumbnail} width={340} height={510} style={{ objectFit: "cover" }} />
+            <img src={reel.thumbnail} alt="" width={340} height={510} style={{ objectFit: "cover" }} />
           ) : (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", background: "#374151", fontSize: 64 }}>
               🎬

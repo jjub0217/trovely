@@ -2,7 +2,7 @@
 
 import { useState, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ChevronLeft, ChevronRight, X, Info } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { UserDetailModal } from "./user-detail-modal";
 import { WithdrawalDetailModal } from "./withdrawal-detail-modal";
 

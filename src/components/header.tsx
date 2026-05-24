@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu } from "lucide-react";
 import { Sidebar } from "./sidebar";
 
@@ -20,7 +21,7 @@ export function Header({
     <>
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-800">
         <Link href="/" aria-label="Trovely" className="flex items-center gap-2">
-          <img src="/logo.png" alt="" className="h-8 w-8" />
+          <Image src="/logo.png" alt="" width={32} height={32} className="h-8 w-8" />
           <span className="text-lg font-bold tracking-tight text-purple-100">
             Trovely
           </span>

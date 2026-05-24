@@ -32,10 +32,14 @@ export function ReelGrid({
   const searchParams = useSearchParams();
   const restoreIntervalRef = useRef<number | null>(null);
 
-  useEffect(() => {
+  // 서버가 새 initialReels를 보내면(검색·필터·갱신) 누적 상태 리셋.
+  // useEffect+setState 대신 "렌더 중 prop 변화 감지"로 처리 (React 공식 패턴, set-state-in-effect 회피).
+  const [prevInitialReels, setPrevInitialReels] = useState(initialReels);
+  if (initialReels !== prevInitialReels) {
+    setPrevInitialReels(initialReels);
     setReels(initialReels);
     setCursor(initialCursor);
-  }, [initialReels, initialCursor]);
+  }
 
   const loadMore = useCallback(async () => {
     if (!cursor || loading) return;

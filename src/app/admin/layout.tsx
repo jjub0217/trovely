@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AdminSidebar } from "./admin-nav";
 import { AdminHeader } from "./admin-header";
-import { getUserEmail } from "@/lib/actions";
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
