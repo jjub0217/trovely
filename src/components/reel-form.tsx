@@ -38,63 +38,58 @@ export function ReelForm({
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitMode, setSubmitMode] = useState<"home" | "continue">("home");
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
-    reel?.thumbnail || null,
-  );
-  const [previewAttempted, setPreviewAttempted] = useState(
-    Boolean(reel?.thumbnail),
-  );
-  const [previewLoading, setPreviewLoading] = useState(false);
   const [manualThumbnail, setManualThumbnail] = useState<string | null>(null);
   const [manualThumbnailName, setManualThumbnailName] = useState("");
+  // /api/og 조회 결과 (어느 url에 대한 것인지 함께 저장)
+  const [fetched, setFetched] = useState<{ url: string; thumbnail: string | null } | null>(null);
 
+  // 미리보기 상태는 입력에서 "파생" — effect에서 setState 하지 않음 (set-state-in-effect 회피)
+  const normalizedUrlForPreview = normalizeReelUrl(url)?.url ?? null;
+  let thumbnailPreview: string | null;
+  let previewAttempted: boolean;
+  let previewLoading: boolean;
+  if (manualThumbnail) {
+    thumbnailPreview = manualThumbnail;
+    previewAttempted = true;
+    previewLoading = false;
+  } else if (!normalizedUrlForPreview) {
+    thumbnailPreview = null;
+    previewAttempted = false;
+    previewLoading = false;
+  } else if (normalizedUrlForPreview === initialNormalizedUrl && reel?.thumbnail) {
+    thumbnailPreview = reel.thumbnail;
+    previewAttempted = true;
+    previewLoading = false;
+  } else if (fetched && fetched.url === normalizedUrlForPreview) {
+    thumbnailPreview = fetched.thumbnail;
+    previewAttempted = true;
+    previewLoading = false;
+  } else {
+    thumbnailPreview = null;
+    previewAttempted = false;
+    previewLoading = true; // 디바운스 fetch 진행 중
+  }
+
+  // url이 새로 바뀐 경우에만 디바운스 후 /api/og 조회. effect는 fetch만 하고
+  // setState는 비동기 콜백(setFetched)에서만 → set-state-in-effect 회피.
   useEffect(() => {
-    if (manualThumbnail) {
-      setThumbnailPreview(manualThumbnail);
-      setPreviewAttempted(true);
-      setPreviewLoading(false);
-      return;
-    }
-
+    if (manualThumbnail) return;
     const normalizedUrl = normalizeReelUrl(url)?.url ?? null;
-    if (!normalizedUrl) {
-      setThumbnailPreview(null);
-      setPreviewAttempted(false);
-      setPreviewLoading(false);
-      return;
-    }
-
-    if (normalizedUrl === initialNormalizedUrl && reel?.thumbnail) {
-      setThumbnailPreview(reel.thumbnail);
-      setPreviewAttempted(true);
-      setPreviewLoading(false);
-      return;
-    }
-
-    setThumbnailPreview(null);
-    setPreviewAttempted(false);
-    setPreviewLoading(true);
+    if (!normalizedUrl) return;
+    if (normalizedUrl === initialNormalizedUrl && reel?.thumbnail) return;
+    if (fetched && fetched.url === normalizedUrl) return; // 이미 조회함
 
     const timeout = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/og?url=${encodeURIComponent(normalizedUrl)}`,
-        );
+        const res = await fetch(`/api/og?url=${encodeURIComponent(normalizedUrl)}`);
         const data = await res.json();
-        setThumbnailPreview(data.thumbnail || null);
-        setPreviewAttempted(true);
-        setPreviewLoading(false);
+        setFetched({ url: normalizedUrl, thumbnail: data.thumbnail || null });
       } catch {
-        setThumbnailPreview(null);
-        setPreviewAttempted(true);
-        setPreviewLoading(false);
+        setFetched({ url: normalizedUrl, thumbnail: null });
       }
     }, 500);
-    return () => {
-      clearTimeout(timeout);
-      setPreviewLoading(false);
-    };
-  }, [url, initialNormalizedUrl, manualThumbnail, reel?.thumbnail]);
+    return () => clearTimeout(timeout);
+  }, [url, initialNormalizedUrl, manualThumbnail, reel?.thumbnail, fetched]);
 
   function handleThumbnailFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -116,9 +111,6 @@ export function ReelForm({
       const result = typeof reader.result === "string" ? reader.result : null;
       setManualThumbnail(result);
       setManualThumbnailName(file.name);
-      setThumbnailPreview(result);
-      setPreviewAttempted(true);
-      setPreviewLoading(false);
       setError("");
     };
     reader.onerror = () => {
@@ -183,9 +175,7 @@ export function ReelForm({
       setTags([]);
       setMemo("");
       setReview("");
-      setThumbnailPreview(null);
-      setPreviewAttempted(false);
-      setPreviewLoading(false);
+      setFetched(null);
       setManualThumbnail(null);
       setManualThumbnailName("");
       setSubmitting(false);
