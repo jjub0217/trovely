@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Play, Star } from "lucide-react";
+import { Play, Star, Plus } from "lucide-react";
 import { ReelWithRelations } from "@/types";
 import { toggleVisited } from "@/lib/actions";
 import { ReelThumbnail } from "./reel-thumbnail";
@@ -44,6 +44,7 @@ export function ReelCard({ reel, priority = false }: { reel: ReelWithRelations; 
         <div className="bg-gray-700 h-30 flex items-center justify-center relative">
           <ReelThumbnail
             src={reel.thumbnail}
+            reelId={reel.id}
             alt=""
             className="absolute inset-0 h-full w-full object-cover"
             loading={priority ? "eager" : "lazy"}
@@ -75,21 +76,30 @@ export function ReelCard({ reel, priority = false }: { reel: ReelWithRelations; 
             {reel.source === "youtube" ? "유튜브" : "인스타"}
           </span>
         </div>
-        <div className="p-3">
-          <div className="flex gap-1 flex-wrap">
-            {reel.categories.map(({ category }) => (
-              <span key={category.id} className="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full text-[10px]">
-                {category.name}
-              </span>
-            ))}
-            {reel.tags.map(({ tag }) => (
-              <span key={tag.id} className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-[10px]">
-                {tag.name}
-              </span>
-            ))}
-          </div>
-          {reel.memo && (
-            <p className="text-[11px] text-gray-400 truncate mt-2">{reel.memo}</p>
+        <div className="p-2.5">
+          {reel.categories.length > 0 || reel.tags.length > 0 || reel.memo ? (
+            <>
+              <div className="flex gap-1 flex-wrap">
+                {reel.categories.map(({ category }) => (
+                  <span key={category.id} className="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full text-[10px]">
+                    {category.name}
+                  </span>
+                ))}
+                {reel.tags.map(({ tag }) => (
+                  <span key={tag.id} className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-[10px]">
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+              {reel.memo && (
+                <p className="text-[11px] text-gray-400 truncate mt-2">{reel.memo}</p>
+              )}
+            </>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-gray-600 px-2 py-0.5 text-[10px] text-gray-500">
+              <Plus size={10} strokeWidth={2} aria-hidden />
+              태그 추가
+            </span>
           )}
         </div>
       </div>

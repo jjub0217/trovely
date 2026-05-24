@@ -402,6 +402,26 @@ export async function deleteTag(id: string) {
   return { success: true };
 }
 
+export async function refreshThumbnail(
+  reelId: string
+): Promise<{ thumbnail: string | null }> {
+  const userId = await requireAuth();
+
+  const reel = await prisma.reel.findFirst({ where: { id: reelId, userId } });
+  if (!reel) return { thumbnail: null };
+
+  const fresh = await extractThumbnail(reel.url);
+  if (!fresh) return { thumbnail: null };
+
+  await prisma.reel.update({
+    where: { id: reel.id },
+    data: { thumbnail: fresh },
+  });
+  revalidatePath("/");
+
+  return { thumbnail: fresh };
+}
+
 export async function getUserStats() {
   const userId = await requireAuth();
   const [totalReels, visitedReels] = await Promise.all([
