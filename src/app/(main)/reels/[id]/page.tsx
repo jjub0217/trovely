@@ -100,6 +100,7 @@ export default async function ReelDetailPage({
           >
             <ReelThumbnail
               src={reel.thumbnail}
+              reelId={reel.id}
               alt=""
               className="absolute inset-0 h-full w-full object-cover"
               loading="eager"

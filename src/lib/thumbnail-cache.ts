@@ -34,42 +34,45 @@ export async function cacheThumbnail(
     return externalUrl;
   }
 
-  try {
-    const response = await fetch(externalUrl, {
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!response.ok) return null;
-
-    const contentType =
-      response.headers.get("content-type")?.split(";")[0].trim().toLowerCase() ?? "image/jpeg";
-    if (!contentType.startsWith("image/")) return null;
-
-    const ext = MIME_EXT[contentType] ?? "jpg";
-
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    if (buffer.byteLength === 0) return null;
-
-    const hash = createHash("sha256").update(stableKey).digest("hex").slice(0, 32);
-    const path = `${hash}.${ext}`;
-
-    const supabase = getClient();
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
-      .upload(path, buffer, {
-        contentType,
-        upsert: true,
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetch(externalUrl, {
+        signal: AbortSignal.timeout(15000),
       });
+      if (!response.ok) {
+        // 4xx = permanent (missing resource) -> retry is pointless. Only retry 5xx.
+        if (response.status >= 400 && response.status < 500) return null;
+        throw new Error(`status ${response.status}`);
+      }
 
-    if (uploadError) {
-      console.error("[cacheThumbnail] upload failed:", uploadError.message);
-      return null;
+      const contentType =
+        response.headers.get("content-type")?.split(";")[0].trim().toLowerCase() ?? "image/jpeg";
+      if (!contentType.startsWith("image/")) return null; // not an image -> permanent
+
+      const ext = MIME_EXT[contentType] ?? "jpg";
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      if (buffer.byteLength === 0) throw new Error("empty body");
+
+      const hash = createHash("sha256").update(stableKey).digest("hex").slice(0, 32);
+      const path = `${hash}.${ext}`;
+
+      const supabase = getClient();
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(path, buffer, { contentType, upsert: true });
+
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      return data.publicUrl;
+    } catch (err) {
+      console.error(`[cacheThumbnail] attempt ${attempt}/${MAX_ATTEMPTS} failed:`, err);
+      if (attempt === MAX_ATTEMPTS) return null;
+      await new Promise((r) => setTimeout(r, 500 * attempt)); // 0.5s, 1.0s backoff
     }
-
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-    return data.publicUrl;
-  } catch (err) {
-    console.error("[cacheThumbnail] error:", err);
-    return null;
   }
+  return null;
 }
