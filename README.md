@@ -43,20 +43,20 @@
 
 ## 썸네일 처리 흐름
 
-인스타그램 CDN의 썸네일 URL은 만료 시간과 지역 정보가 서명에 박혀 있어, 며칠 지나거나 다른 지역에서 열면 깨집니다. 이를 막기 위해 추출한 이미지를 곧바로 Supabase Storage에 복사해서 영구 URL로 저장합니다.
+인스타그램 CDN의 썸네일 URL은 만료 시간과 지역 정보가 서명에 박혀 있어, 며칠 지나거나 다른 지역에서 열면 깨집니다. 이를 막기 위해 추출한 이미지를 곧바로 Supabase Storage에 복사해서 영구 URL로 저장합니다. 그래도 만료·삭제 등으로 깨진 썸네일이 보이면 표시 시점에 자동으로 재추출·복구합니다(self-heal).
 
 ```
-[콘텐츠 추가]
+[콘텐츠 추가 / 저장]
    ↓
-[1] Microlink로 썸네일 추출 시도
-   ↓ 실패 시
-[2] iframely로 폴백 추출
-   ↓ 실패 시
-[3] 직접 OG 태그 스크래핑
+[추출] YouTube → oembed  /  Instagram·기타 → Microlink → iframely → OG 태그 스크래핑 (폴백 체인)
    ↓ 성공한 이미지 URL
-[이미지 다운로드 → Supabase Storage(reel-thumbnails 버킷) 업로드]
+[이미지 다운로드 → Supabase Storage(reel-thumbnails 버킷) 업로드]   ← 실패 시 최대 3회 재시도
    ↓
 [영구 URL을 DB에 저장]
+
+[표시 중 썸네일이 깨지면 (만료·삭제 등)]
+   ↓
+[onError 감지 → 서버 재추출 → DB 갱신 → 그 자리서 교체]   ← 자가복구(self-heal): 1회만 시도, 실패 시 대체 UI
 ```
 
 핵심 코드: [`src/lib/og.ts`](src/lib/og.ts), [`src/lib/thumbnail-cache.ts`](src/lib/thumbnail-cache.ts)
@@ -106,7 +106,7 @@ prisma/
 
 | 모델 | 설명 |
 |---|---|
-| `Reel` | 콘텐츠 본체 (url, thumbnail, memo, review, visited, userId) |
+| `Reel` | 콘텐츠 본체 (url, thumbnail, memo, review, visited, source[instagram/youtube], userId) |
 | `Category` | 카테고리 (사용자별 unique) |
 | `Tag` | 태그 (사용자별 unique) |
 | `ReelCategory`, `ReelTag` | N:M 매핑 테이블 |
@@ -167,6 +167,8 @@ Supabase 대시보드 → **Storage** → New bucket
 - 이름: `reel-thumbnails`
 - Public bucket 체크
 
+> 아래 **로컬 개발(Docker + Supabase)** 방식으로 띄우면 `supabase/seed.sql`이 이 버킷을 자동 생성하므로 이 단계는 생략됩니다.
+
 ### 6. 개발 서버 실행
 
 ```bash
@@ -174,6 +176,30 @@ npm run dev
 ```
 
 http://localhost:3000 접속.
+
+## 로컬 개발 (Docker + Supabase)
+
+운영 Supabase에 연결하는 대신, 로컬에 Supabase 스택을 Docker로 띄워 개발할 수 있습니다 — 운영 DB를 건드리지 않고 동일한 환경에서 작업합니다.
+
+**사전 준비**: [Docker Desktop](https://www.docker.com/products/docker-desktop/) + Supabase CLI (`brew install supabase/tap/supabase`)
+
+```bash
+supabase start              # 로컬 DB(54322)·Studio(54323)·API(54321)·Storage 기동
+                            # supabase/seed.sql이 reel-thumbnails 버킷을 자동 생성
+npx prisma migrate deploy   # 로컬 DB에 스키마 적용 (.env의 DATABASE_URL이 로컬일 때)
+npm run dev
+```
+
+`.env`를 로컬 값으로 채웁니다 (`supabase status`로 확인):
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+NEXT_PUBLIC_SUPABASE_URL="http://127.0.0.1:54321"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="<supabase status의 ANON_KEY>"
+SUPABASE_SERVICE_ROLE_KEY="<supabase status의 SERVICE_ROLE_KEY>"
+```
+
+> **dev/prod 분리**: 로컬 개발은 위 로컬 DB, 운영은 Vercel 환경변수의 클라우드 Supabase를 씁니다. 운영 `DATABASE_URL`·비밀 키는 Vercel에만 두고 로컬 디스크엔 두지 않습니다. (Prisma CLI는 `.env`만 읽으므로, 로컬 주소를 `.env`에 둬야 `prisma migrate`가 운영을 건드리지 않습니다.) 작업이 끝나면 `supabase stop` (데이터·이미지는 보존).
 
 ## 사용 가능한 명령어
 
