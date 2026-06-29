@@ -4,8 +4,21 @@ import { prisma } from "./db";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Pool } from "pg";
+import { DEMO_MODE, DEMO_USER_ID } from "@/lib/demo";
+import {
+  getMockDashboardStats,
+  getMockMemberStats,
+  getMockSignupTrend,
+  getMockReelTrend,
+  getMockWithdrawalStats,
+  getMockWithdrawalTrend,
+  getMockAdminUsers,
+  getMockWithdrawalDetail,
+  getMockUserDetail,
+} from "./mocks/admin";
 
 async function requireAdmin(): Promise<string> {
+  if (DEMO_MODE) return DEMO_USER_ID;
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,6 +42,7 @@ function getPool() {
 }
 
 export async function getDashboardStats() {
+  if (DEMO_MODE) return getMockDashboardStats();
   await requireAdmin();
 
   const pool = getPool();
@@ -58,6 +72,7 @@ export async function getDashboardStats() {
 }
 
 export async function getMemberStats() {
+  if (DEMO_MODE) return getMockMemberStats();
   await requireAdmin();
 
   const pool = getPool();
@@ -93,6 +108,7 @@ export async function getMemberStats() {
 }
 
 export async function getSignupTrend() {
+  if (DEMO_MODE) return getMockSignupTrend();
   await requireAdmin();
 
   const pool = getPool();
@@ -125,6 +141,7 @@ export async function getSignupTrend() {
 }
 
 export async function getReelTrend() {
+  if (DEMO_MODE) return getMockReelTrend();
   await requireAdmin();
 
   const result = await prisma.$queryRaw<{ date: Date; count: bigint }[]>`
@@ -155,6 +172,7 @@ export async function getWithdrawalStats({
   page?: number;
   pageSize?: number;
 } = {}) {
+  if (DEMO_MODE) return getMockWithdrawalStats({ page, pageSize });
   await requireAdmin();
 
   const [totalCount, withdrawals, trend] = await Promise.all([
@@ -200,6 +218,7 @@ export async function getWithdrawalStats({
 }
 
 export async function getWithdrawalTrend() {
+  if (DEMO_MODE) return getMockWithdrawalTrend();
   await requireAdmin();
 
   const result = await prisma.$queryRaw<{ date: Date; count: bigint }[]>`
@@ -224,6 +243,7 @@ export async function getWithdrawalTrend() {
 }
 
 export async function toggleAdminRole(userId: string, email: string) {
+  if (DEMO_MODE) return { isAdmin: false };
   await requireAdmin();
 
   const existing = await prisma.adminRole.findUnique({ where: { userId } });
@@ -247,6 +267,7 @@ export async function getAdminUsers({
   page?: number;
   pageSize?: number;
 }) {
+  if (DEMO_MODE) return getMockAdminUsers({ search, status, page, pageSize });
   await requireAdmin();
 
   const pool = getPool();
@@ -334,6 +355,7 @@ export async function getAdminUsers({
 }
 
 export async function getWithdrawalDetail(withdrawalId: string) {
+  if (DEMO_MODE) return getMockWithdrawalDetail(withdrawalId);
   await requireAdmin();
 
   const reasonMap: Record<string, string> = {
@@ -357,6 +379,7 @@ export async function getWithdrawalDetail(withdrawalId: string) {
 }
 
 export async function getUserDetail(userId: string) {
+  if (DEMO_MODE) return getMockUserDetail(userId);
   await requireAdmin();
 
   const pool = getPool();
