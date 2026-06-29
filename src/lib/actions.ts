@@ -9,6 +9,15 @@ import { normalizeReelUrl, type ReelSource } from "./reel-url";
 import { normalizeTagName, normalizeTagNames } from "./tag-name";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
 import { cacheThumbnail } from "./thumbnail-cache";
+import { DEMO_MODE } from "./demo";
+import {
+  getMockReels,
+  getMockReel,
+  getMockCategories,
+  getMockTags,
+  getMockUserStats,
+  getMockUserEmail,
+} from "./mocks/portal";
 
 async function resolveThumbnail(
   raw: string | null | undefined,
@@ -28,6 +37,7 @@ export async function createReel(formData: {
   categoryIds: string[];
   tagNames: string[];
 }) {
+  if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
   const parsed = normalizeReelUrl(formData.url);
   if (!parsed) {
@@ -94,6 +104,7 @@ export async function updateReel(
     tagNames: string[];
   }
 ) {
+  if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
   const parsed = normalizeReelUrl(formData.url);
   if (!parsed) {
@@ -160,6 +171,7 @@ export async function updateReel(
 }
 
 export async function toggleVisited(id: string) {
+  if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
   const reel = await prisma.reel.findFirst({
     where: { id, userId },
@@ -174,6 +186,7 @@ export async function toggleVisited(id: string) {
 }
 
 export async function deleteReel(id: string) {
+  if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
   const reel = await prisma.reel.findFirst({ where: { id, userId } });
   if (!reel) return { error: "콘텐츠를 찾을 수 없습니다" };
@@ -200,6 +213,7 @@ export async function getReels({
   cursor?: string;
   take?: number;
 }) {
+  if (DEMO_MODE) return getMockReels({ search, categoryId, source, status, sort, cursor, take });
   const userId = await requireAuth();
   const where: Prisma.ReelWhereInput = { userId };
 
@@ -261,6 +275,7 @@ export async function getReels({
 }
 
 export async function getReel(id: string) {
+  if (DEMO_MODE) return getMockReel(id);
   const userId = await requireAuth();
 
   return prisma.reel.findFirst({
@@ -273,6 +288,7 @@ export async function getReel(id: string) {
 }
 
 export async function getCategories() {
+  if (DEMO_MODE) return getMockCategories();
   const userId = await requireAuth();
   return prisma.category.findMany({
     where: { userId },
@@ -281,6 +297,7 @@ export async function getCategories() {
 }
 
 export async function getTags() {
+  if (DEMO_MODE) return getMockTags();
   const userId = await requireAuth();
   const tags = await prisma.tag.findMany({
     where: { userId },
@@ -300,6 +317,7 @@ export async function getTags() {
 }
 
 export async function createCategory(name: string) {
+  if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
   const trimmed = name.trim();
   if (!trimmed) return { error: "카테고리명을 입력해주세요" };
@@ -318,6 +336,7 @@ export async function createCategory(name: string) {
 }
 
 export async function createTag(name: string) {
+  if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
   const normalized = normalizeTagName(name);
   if (!normalized) return { error: "태그명을 입력해주세요" };
@@ -337,6 +356,7 @@ export async function createTag(name: string) {
 }
 
 export async function updateCategory(id: string, name: string) {
+  if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
   const trimmed = name.trim();
   if (!trimmed) return { error: "카테고리명을 입력해주세요" };
@@ -356,6 +376,7 @@ export async function updateCategory(id: string, name: string) {
 }
 
 export async function updateTag(id: string, name: string) {
+  if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
   const normalized = normalizeTagName(name);
   if (!normalized) return { error: "태그명을 입력해주세요" };
@@ -380,6 +401,7 @@ export async function updateTag(id: string, name: string) {
 }
 
 export async function deleteCategory(id: string) {
+  if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
   const category = await prisma.category.findFirst({ where: { id, userId } });
   if (!category) return { error: "카테고리를 찾을 수 없습니다" };
@@ -391,6 +413,7 @@ export async function deleteCategory(id: string) {
 }
 
 export async function deleteTag(id: string) {
+  if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
   const tag = await prisma.tag.findFirst({ where: { id, userId } });
   if (!tag) return { error: "태그를 찾을 수 없습니다" };
@@ -405,6 +428,7 @@ export async function deleteTag(id: string) {
 export async function refreshThumbnail(
   reelId: string
 ): Promise<{ thumbnail: string | null }> {
+  if (DEMO_MODE) return { thumbnail: null };
   const userId = await requireAuth();
 
   const reel = await prisma.reel.findFirst({ where: { id: reelId, userId } });
@@ -423,6 +447,7 @@ export async function refreshThumbnail(
 }
 
 export async function getUserStats() {
+  if (DEMO_MODE) return getMockUserStats();
   const userId = await requireAuth();
   const [totalReels, visitedReels] = await Promise.all([
     prisma.reel.count({ where: { userId } }),
@@ -432,6 +457,7 @@ export async function getUserStats() {
 }
 
 export async function getUserEmail() {
+  if (DEMO_MODE) return getMockUserEmail();
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -439,6 +465,7 @@ export async function getUserEmail() {
 }
 
 export async function deleteAccount({ reason, detail }: { reason: string; detail?: string }) {
+  if (DEMO_MODE) return { success: true };
   const userId = await requireAuth();
 
   const { createClient } = await import("@/lib/supabase/server");

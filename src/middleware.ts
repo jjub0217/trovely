@@ -1,7 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { DEMO_MODE } from "@/lib/demo";
 
 export async function middleware(request: NextRequest) {
+  // 데모 모드: 인증 로직(Supabase 호출 포함)을 통째로 건너뛰고 모든 페이지 허용
+  if (DEMO_MODE) return NextResponse.next({ request });
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

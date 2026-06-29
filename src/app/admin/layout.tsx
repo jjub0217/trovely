@@ -4,6 +4,7 @@ import { AdminSidebar } from "./admin-nav";
 import { AdminHeader } from "./admin-header";
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
+import { DEMO_MODE } from "@/lib/demo";
 
 export const metadata: Metadata = {
   title: "Admin | Trovely",
@@ -28,14 +29,18 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // 데모 모드: 권한 체크(Supabase/Prisma) 건너뛰고 더미 어드민으로 진입
+  let email = "demo@trovely.app";
+  if (!DEMO_MODE) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
 
-  const adminRole = await prisma.adminRole.findUnique({ where: { userId: user.id } });
-  if (!adminRole) redirect("/");
+    const adminRole = await prisma.adminRole.findUnique({ where: { userId: user.id } });
+    if (!adminRole) redirect("/");
 
-  const email = user.email || "";
+    email = user.email || "";
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-950 text-gray-100">
