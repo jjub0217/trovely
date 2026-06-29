@@ -8,6 +8,7 @@ import { ReelWithRelations } from "@/types";
 import { toggleVisited } from "@/lib/actions";
 import { ReelThumbnail } from "./reel-thumbnail";
 import { writeListReturnState } from "@/lib/list-navigation";
+import { DEMO_MODE } from "@/lib/demo";
 
 export function ReelCard({ reel, priority = false }: { reel: ReelWithRelations; priority?: boolean }) {
   const [visited, setVisited] = useState(reel.visited);
@@ -50,13 +51,22 @@ export function ReelCard({ reel, priority = false }: { reel: ReelWithRelations; 
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "low"}
           />
-          {reel.source === "youtube" && reel.thumbnail && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
-                <Play size={13} className="ml-0.5 fill-white text-white" />
-              </div>
-            </div>
-          )}
+          {DEMO_MODE
+            ? reel.thumbnail && (
+                // 데모: mock 썸네일(picsum)엔 영상 표식이 없어서, 모든 카드에 큰 ▶ 오버레이를 그려 실서비스와 비슷하게 보이게 함
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/40">
+                    <Play size={20} className="ml-0.5 fill-white text-white" />
+                  </div>
+                </div>
+              )
+            : reel.source === "youtube" && reel.thumbnail && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
+                    <Play size={13} className="ml-0.5 fill-white text-white" />
+                  </div>
+                </div>
+              )}
           <button
             onClick={handleToggle}
             aria-label={visited ? "방문 완료 해제" : "방문 완료 표시"}
