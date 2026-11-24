@@ -18,6 +18,15 @@ export function shouldRetry(status: number): boolean {
   return status === 429 || status >= 500;
 }
 
+/** 화면에 보여 줄 짧은 오류 설명 */
+export function describeAiError(e: unknown): string {
+  const name = (e as { name?: string })?.name;
+  const msg = String((e as { message?: string })?.message ?? e);
+  if (name === "TimeoutError") return "AI 응답이 너무 오래 걸려 멈췄습니다. 잠시 뒤 다시 누르면 이어서 합니다.";
+  if (/\((429|503)\)/.test(msg)) return "AI 서비스가 지금 붐벼서 요청을 받지 않습니다. 잠시 뒤 다시 누르면 이어서 합니다.";
+  return `AI 요청이 실패했습니다: ${msg.slice(0, 120)}`;
+}
+
 function apiKey(): string {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다(.env.local 또는 Vercel 환경변수).");
@@ -32,7 +41,7 @@ async function postJson(path: string, body: unknown): Promise<unknown> {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(60000),
+      signal: AbortSignal.timeout(180000),
     });
     if (res.ok) return res.json();
     if (shouldRetry(res.status) && attempt < RETRY_DELAYS_MS.length) {

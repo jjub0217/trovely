@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { DEMO_MODE } from "@/lib/demo";
 import { normalizeTagNames } from "@/lib/tag-name";
 import { requestSuggestions, SUGGEST_BATCH_SIZE } from "./suggest";
+import { describeAiError } from "@/lib/ai/gemini";
 import { ADD_CHUNK_SIZE } from "./plan-import";
 import { finalCategories, groupOf, type GroupKind } from "./review";
 
@@ -88,7 +89,8 @@ export async function runSuggestions(
 
   const todo = await prisma.importCandidate.findMany({
     where: { batchId, suggested: false, status: "pending" },
-    orderBy: { savedAt: "desc" },
+    // 카테고리가 필요한 게시물(needsAi)부터: 검토할 AI 묶음이 먼저 생기게
+    orderBy: [{ needsAi: "desc" }, { savedAt: "desc" }],
     take: SUGGEST_BATCH_SIZE,
   });
 
@@ -131,7 +133,7 @@ export async function runSuggestions(
       );
     } catch (e) {
       // 처리 못 한 후보는 suggested=false로 남아 다음 호출에서 이어서 한다.
-      return { error: `AI 제안 중 오류가 났습니다. 다시 누르면 이어서 합니다. (${String(e).slice(0, 120)})` };
+      return { error: describeAiError(e) };
     }
   }
 

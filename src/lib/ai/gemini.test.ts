@@ -9,3 +9,11 @@ test("shouldRetry: 요청 한도(429)와 서버 오류(5xx)만 다시 시도한�
   assert.equal(shouldRetry(400), false);
   assert.equal(shouldRetry(403), false);
 });
+
+import { describeAiError } from "./gemini";
+
+test("describeAiError: 시간 초과와 503은 '붐빔'으로, 그 밖은 앞부분만", () => {
+  assert.match(describeAiError(new DOMException("aborted", "TimeoutError")), /오래 걸려/);
+  assert.match(describeAiError(new Error("Gemini 요청 실패(503): high demand")), /붐벼/);
+  assert.match(describeAiError(new Error("Gemini 요청 실패(400): bad")), /400/);
+});
