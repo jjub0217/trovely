@@ -3,6 +3,9 @@ import type { ExportCollection, ExportPost } from "./parse-export";
 /** 게시물이 이 수 이상인 인스타그램 컬렉션은 이름 그대로 카테고리로 옮긴다. */
 export const SMALL_COLLECTION_THRESHOLD = 10;
 
+/** 브라우저가 서버로 한 번에 보내는 후보 수(서버 액션 요청 1MB 제한 안쪽) */
+export const ADD_CHUNK_SIZE = 200;
+
 export type PlannedItem = {
   url: string;
   caption: string;

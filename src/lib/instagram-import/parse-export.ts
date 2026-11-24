@@ -22,7 +22,9 @@ export function fixMojibake(s: string): string {
   for (const ch of s) {
     if (ch.codePointAt(0)! > 0xff) return s;
   }
-  return Buffer.from(s, "latin1").toString("utf8");
+  // 브라우저에서도 돌도록 Buffer 대신 TextDecoder를 쓴다(파일은 브라우저에서 읽는다).
+  const bytes = Uint8Array.from(s, (c) => c.charCodeAt(0));
+  return new TextDecoder("utf-8").decode(bytes);
 }
 
 function asEntries(json: unknown): ExportEntry[] {

@@ -1,0 +1,38 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { groupOf, finalCategories, type CandidateLike } from "./review";
+
+const base: CandidateLike = {
+  needsAi: false,
+  keptCategories: ["데이트"],
+  suggestedCategories: [],
+  newCategories: [],
+  uncertain: false,
+};
+
+test("큰 컬렉션 게시물은 첫 번째 컬렉션 이름 묶음(kept)", () => {
+  assert.deepEqual(groupOf(base), { key: "kept:데이트", label: "데이트", kind: "kept" });
+  assert.deepEqual(finalCategories(base), ["데이트"]);
+});
+
+test("AI가 기존 카테고리를 고른 게시물은 ai 묶음", () => {
+  const c = { ...base, needsAi: true, keptCategories: [], suggestedCategories: ["카페"] };
+  assert.deepEqual(groupOf(c), { key: "ai:카페", label: "카페", kind: "ai" });
+  assert.deepEqual(finalCategories(c), ["카페"]);
+});
+
+test("새 카테고리 제안은 new 묶음, 저장할 카테고리에 포함", () => {
+  const c = { ...base, needsAi: true, keptCategories: [], newCategories: ["피부 관리"] };
+  assert.deepEqual(groupOf(c), { key: "new:피부 관리", label: "피부 관리", kind: "new" });
+  assert.deepEqual(finalCategories(c), ["피부 관리"]);
+});
+
+test("AI가 확신하지 못하면 분류 애매 묶음, 카테고리 없이", () => {
+  const c = { ...base, needsAi: true, keptCategories: [], uncertain: true };
+  assert.deepEqual(groupOf(c), { key: "uncertain", label: "분류 애매", kind: "uncertain" });
+  assert.deepEqual(finalCategories(c), []);
+});
+
+test("큰 컬렉션 게시물은 AI 응답의 uncertain 표시를 무시한다", () => {
+  assert.equal(groupOf({ ...base, uncertain: true }).kind, "kept");
+});
