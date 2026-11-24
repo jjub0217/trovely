@@ -34,3 +34,11 @@ export function finalCategories(c: CandidateLike): string[] {
   if (!c.needsAi) return c.keptCategories;
   return [...new Set([...c.suggestedCategories, ...c.newCategories])];
 }
+
+/** 검토 목록에 보일 수 있는가: 큰 컬렉션 게시물은 바로, AI가 필요한 게시물은 제안이 끝난 뒤 */
+export function isReviewable(c: { needsAi: boolean; suggested: boolean }): boolean {
+  return !c.needsAi || c.suggested;
+}
+
+/** Prisma where 조건으로 같은 규칙 */
+export const REVIEWABLE_WHERE = { OR: [{ needsAi: false }, { suggested: true }] };

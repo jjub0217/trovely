@@ -36,3 +36,14 @@ test("AI가 확신하지 못하면 분류 애매 묶음, 카테고리 없이", (
 test("큰 컬렉션 게시물은 AI 응답의 uncertain 표시를 무시한다", () => {
   assert.equal(groupOf({ ...base, uncertain: true }).kind, "kept");
 });
+
+import { isReviewable } from "./review";
+
+test("큰 컬렉션 게시물은 AI 제안 없이도 바로 검토할 수 있다", () => {
+  assert.equal(isReviewable({ needsAi: false, suggested: false }), true);
+});
+
+test("카테고리가 필요한 게시물은 AI 제안이 끝나야 검토할 수 있다", () => {
+  assert.equal(isReviewable({ needsAi: true, suggested: false }), false);
+  assert.equal(isReviewable({ needsAi: true, suggested: true }), true);
+});

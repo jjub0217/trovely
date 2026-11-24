@@ -13,7 +13,7 @@ import {
 } from "@/lib/instagram-import/actions";
 import { GroupPanel } from "./group-panel";
 
-type Summary = { total: number; pending: number; unsuggested: number; saved: number; excluded: number };
+type Summary = { total: number; pending: number; aiTotal: number; unsuggested: number; saved: number; excluded: number };
 
 const KIND_BADGE: Record<ReviewGroup["kind"], { text: string; className: string } | null> = {
   kept: { text: "내 컬렉션", className: "bg-gray-800 text-gray-300" },
@@ -132,22 +132,22 @@ export function ImportClient({ initialBatchId }: { initialBatchId: string | null
 
       {batchId && summary && (
         <section className="space-y-3 rounded-xl border border-gray-800 p-5">
-          <h2 className="font-medium">2. AI 제안</h2>
+          <h2 className="font-medium">2. AI 제안(카테고리가 필요한 게시물만)</h2>
           <div className="h-2 w-full overflow-hidden rounded bg-gray-800">
             <div
               className="h-full bg-blue-500"
-              style={{ width: `${summary.pending ? ((summary.pending - summary.unsuggested) / summary.pending) * 100 : 100}%` }}
+              style={{ width: `${summary.aiTotal ? ((summary.aiTotal - summary.unsuggested) / summary.aiTotal) * 100 : 100}%` }}
             />
           </div>
           <p className="text-sm text-gray-400">
-            대기 {summary.pending}개 중 AI 제안 끝 {summary.pending - summary.unsuggested}개 · 저장 {summary.saved}개 · 뺌 {summary.excluded}개 · 처리 {done}/{summary.total}
+            AI 제안 {summary.aiTotal - summary.unsuggested}/{summary.aiTotal}개 끝 · 대기 {summary.pending}개 · 저장 {summary.saved}개 · 뺌 {summary.excluded}개 · 처리 {done}/{summary.total}. 큰 컬렉션 게시물은 AI 없이 바로 아래에서 검토할 수 있습니다(태그는 나중에).
           </p>
           <button
             className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-40"
             disabled={busy || summary.unsuggested === 0}
             onClick={handleSuggest}
           >
-            {summary.unsuggested === summary.pending ? "AI 제안 시작" : "이어서 하기"}
+            {summary.unsuggested === summary.aiTotal ? "AI 제안 시작" : "이어서 하기"}
           </button>
         </section>
       )}

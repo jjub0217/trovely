@@ -9,7 +9,7 @@ import { normalizeTagNames } from "@/lib/tag-name";
 import { requestSuggestions, SUGGEST_BATCH_SIZE } from "./suggest";
 import { describeAiError } from "@/lib/ai/gemini";
 import { ADD_CHUNK_SIZE } from "./plan-import";
-import { finalCategories, groupOf, type GroupKind } from "./review";
+import { finalCategories, groupOf, REVIEWABLE_WHERE, type GroupKind } from "./review";
 
 const DEMO_ERROR = { error: "데모 모드에서는 가져오기를 쓸 수 없습니다" } as const;
 
@@ -88,9 +88,9 @@ export async function runSuggestions(
   if (!(await ownBatch(batchId, userId))) return { error: "가져오기 작업을 찾을 수 없습니다" };
 
   const todo = await prisma.importCandidate.findMany({
-    where: { batchId, suggested: false, status: "pending" },
-    // 카테고리가 필요한 게시물(needsAi)부터: 검토할 AI 묶음이 먼저 생기게
-    orderBy: [{ needsAi: "desc" }, { savedAt: "desc" }],
+    // AI는 카테고리가 필요한 게시물에만 쓴다(큰 컬렉션 게시물은 태그 없이 저장, 2026-11-24 사용자 결정)
+    where: { batchId, suggested: false, status: "pending", needsAi: true },
+    orderBy: { savedAt: "desc" },
     take: SUGGEST_BATCH_SIZE,
   });
 
@@ -138,7 +138,7 @@ export async function runSuggestions(
   }
 
   const remaining = await prisma.importCandidate.count({
-    where: { batchId, suggested: false, status: "pending" },
+    where: { batchId, suggested: false, status: "pending", needsAi: true },
   });
   return { processed: todo.length, remaining };
 }
@@ -148,7 +148,7 @@ export async function getReviewGroups(batchId: string): Promise<ReviewGroup[]> {
   const userId = await requireAdmin();
   if (!(await ownBatch(batchId, userId))) return [];
   const candidates = await prisma.importCandidate.findMany({
-    where: { batchId, status: "pending", suggested: true },
+    where: { batchId, status: "pending", ...REVIEWABLE_WHERE },
   });
   const groups = new Map<string, ReviewGroup>();
   for (const c of candidates) {
@@ -168,7 +168,7 @@ export async function getGroupCandidates(batchId: string, groupKey: string): Pro
   const userId = await requireAdmin();
   if (!(await ownBatch(batchId, userId))) return [];
   const candidates = await prisma.importCandidate.findMany({
-    where: { batchId, status: "pending", suggested: true },
+    where: { batchId, status: "pending", ...REVIEWABLE_WHERE },
     orderBy: { savedAt: "desc" },
   });
   return candidates.filter((c) => groupOf(c).key === groupKey);
@@ -221,7 +221,7 @@ export async function saveGroup(
   if (!(await ownBatch(batchId, userId))) return { error: "가져오기 작업을 찾을 수 없습니다" };
 
   const candidates = (
-    await prisma.importCandidate.findMany({ where: { batchId, status: "pending", suggested: true } })
+    await prisma.importCandidate.findMany({ where: { batchId, status: "pending", ...REVIEWABLE_WHERE } })
   ).filter((c) => groupOf(c).key === groupKey);
 
   const reelIds: string[] = [];
@@ -268,19 +268,20 @@ export async function saveGroup(
 }
 
 export async function getBatchSummary(batchId: string): Promise<
-  { total: number; pending: number; unsuggested: number; saved: number; excluded: number } | { error: string }
+  { total: number; pending: number; aiTotal: number; unsuggested: number; saved: number; excluded: number } | { error: string }
 > {
   if (DEMO_MODE) return DEMO_ERROR;
   const userId = await requireAdmin();
   if (!(await ownBatch(batchId, userId))) return { error: "가져오기 작업을 찾을 수 없습니다" };
-  const [total, pending, unsuggested, saved, excluded] = await Promise.all([
+  const [total, pending, aiTotal, unsuggested, saved, excluded] = await Promise.all([
     prisma.importCandidate.count({ where: { batchId } }),
     prisma.importCandidate.count({ where: { batchId, status: "pending" } }),
-    prisma.importCandidate.count({ where: { batchId, status: "pending", suggested: false } }),
+    prisma.importCandidate.count({ where: { batchId, status: "pending", needsAi: true } }),
+    prisma.importCandidate.count({ where: { batchId, status: "pending", suggested: false, needsAi: true } }),
     prisma.importCandidate.count({ where: { batchId, status: "saved" } }),
     prisma.importCandidate.count({ where: { batchId, status: "excluded" } }),
   ]);
-  return { total, pending, unsuggested, saved, excluded };
+  return { total, pending, aiTotal, unsuggested, saved, excluded };
 }
 
 export async function getLatestBatchId(): Promise<string | null> {
