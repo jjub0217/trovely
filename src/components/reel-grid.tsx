@@ -6,7 +6,7 @@ import { ReelCard } from "./reel-card";
 import { getReels } from "@/lib/actions";
 import { ReelWithRelations } from "@/types";
 import { clearListReturnState, readListReturnState } from "@/lib/list-navigation";
-import { SIMILAR_SECTION_LABEL } from "@/lib/search/labels";
+import { noKeywordMatchNote, SIMILAR_LESS_BUTTON, SIMILAR_MORE_BUTTON } from "@/lib/search/labels";
 
 export function ReelGrid({
   initialReels,
@@ -39,10 +39,13 @@ export function ReelGrid({
   // 서버가 새 initialReels를 보내면(검색·필터·갱신) 누적 상태 리셋.
   // useEffect+setState 대신 "렌더 중 prop 변화 감지"로 처리 (React 공식 패턴, set-state-in-effect 회피).
   const [prevInitialReels, setPrevInitialReels] = useState(initialReels);
+  // 상황 2(낱말 결과가 있을 때) 비슷한 릴스는 접어 두고, 새로 검색하면 다시 접는다
+  const [similarOpen, setSimilarOpen] = useState(false);
   if (initialReels !== prevInitialReels) {
     setPrevInitialReels(initialReels);
     setReels(initialReels);
     setCursor(initialCursor);
+    setSimilarOpen(false);
   }
 
   const loadMore = useCallback(async () => {
@@ -147,27 +150,46 @@ export function ReelGrid({
     return () => observer.disconnect();
   }, [loadMore]);
 
-  const showSimilar = !cursor && similarReels.length > 0;
-  const similarSection = showSimilar && (
-    <section className="px-6 pb-6" aria-label={SIMILAR_SECTION_LABEL}>
-      <h2 className="mb-3 text-xs text-gray-500">{SIMILAR_SECTION_LABEL}</h2>
-      <div className="grid grid-cols-2 gap-3.5">
-        {similarReels.map((reel) => (
-          <ReelCard key={reel.id} reel={reel} />
-        ))}
+  const similarGrid = (
+    <div className="grid grid-cols-2 gap-3.5">
+      {similarReels.map((reel) => (
+        <ReelCard key={reel.id} reel={reel} />
+      ))}
+    </div>
+  );
+
+  // 상황 1: 낱말 결과가 없으면 비슷한 릴스가 주 목록이 된다
+  if (reels.length === 0 && similarReels.length > 0 && search) {
+    return (
+      <div className="px-6 pb-6">
+        <p className="mb-3 text-sm text-gray-400">{noKeywordMatchNote(search.trim())}</p>
+        {similarGrid}
       </div>
+    );
+  }
+
+  // 상황 2: 낱말 결과를 끝까지 불러온 뒤, 접어 둔 비슷한 릴스를 버튼으로 펼친다
+  const similarSection = !cursor && similarReels.length > 0 && (
+    <section className="px-6 pb-6">
+      <div className="mb-3 border-t border-gray-800" />
+      <button
+        type="button"
+        aria-expanded={similarOpen}
+        onClick={() => setSimilarOpen((v) => !v)}
+        className="mb-3 w-full rounded-xl border border-gray-700 py-2.5 text-sm text-gray-300"
+      >
+        {similarOpen ? SIMILAR_LESS_BUTTON : `${SIMILAR_MORE_BUTTON} (${similarReels.length})`}
+      </button>
+      {similarOpen && similarGrid}
     </section>
   );
 
   if (reels.length === 0) {
     const hasFilters = Boolean(search || categoryId || status);
     return (
-      <>
-        <div className={`px-6 text-center text-gray-500 text-sm ${showSimilar ? "py-6" : "py-12"}`}>
-          {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
-        </div>
-        {similarSection}
-      </>
+      <div className="px-6 py-12 text-center text-gray-500 text-sm">
+        {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
+      </div>
     );
   }
 
