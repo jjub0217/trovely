@@ -4,12 +4,20 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { SEARCH_MODE_LABELS } from "@/lib/search/labels";
+import { syncSearchInput, type SearchInputState } from "@/lib/search/search-input-sync";
 
 export function SearchBar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("search") || "");
+  const urlSearch = searchParams.get("search") || "";
+  const [input, setInput] = useState<SearchInputState>({ prevUrl: urlSearch, pushed: urlSearch, query: urlSearch });
+  // 로고, 뒤로 가기처럼 검색창 밖에서 주소의 검색어가 바뀌면 입력값을 주소에 맞춘다
+  // (렌더 중 값 변화 감지, set-state-in-effect 회피). 예전에는 입력값이 주소를 다시 덮어써서 로고를 눌러도 검색이 안 풀렸다.
+  const synced = syncSearchInput(input, urlSearch);
+  if (synced !== input) setInput(synced);
+  const query = synced.query;
+  const setQuery = (value: string) => setInput((s) => ({ ...s, query: value }));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -27,6 +35,7 @@ export function SearchBar() {
       const currentUrl = searchParams.toString() ? `${pathname}?${searchParams.toString()}` : pathname;
 
       if (nextUrl !== currentUrl) {
+        setInput((s) => ({ ...s, pushed: query }));
         router.replace(nextUrl);
       }
     }, 300);
