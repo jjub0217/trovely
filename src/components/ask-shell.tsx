@@ -200,25 +200,23 @@ export function AskShell({ enabled, children }: { enabled: boolean; children: Re
               )}
             </div>
 
-            <form onSubmit={submit} className="px-6 pb-6 pt-2">
-              <div className="flex items-center rounded-2xl border border-gray-600 bg-gray-700/40 pl-4 pr-2 focus-within:border-purple-500">
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  enterKeyHint="send"
-                  placeholder={ASK_INPUT_PLACEHOLDER}
-                  aria-label={ASK_INPUT_PLACEHOLDER}
-                  className="flex-1 bg-transparent py-4 text-sm text-gray-100 placeholder-gray-500 focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={!input.trim() || loading}
-                  aria-label="보내기"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-300 disabled:opacity-40"
-                >
-                  <ArrowUp size={18} aria-hidden />
-                </button>
-              </div>
+            <form onSubmit={submit} className="flex items-center gap-2 px-6 pb-6 pt-2">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                enterKeyHint="send"
+                placeholder={ASK_INPUT_PLACEHOLDER}
+                aria-label={ASK_INPUT_PLACEHOLDER}
+                className="min-w-0 flex-1 rounded-2xl border border-gray-600 bg-gray-700/40 px-4 py-4 text-sm text-gray-100 placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!input.trim() || loading}
+                aria-label="보내기"
+                className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-purple-600 text-white transition-opacity disabled:bg-gray-700 disabled:text-gray-400"
+              >
+                <ArrowUp size={20} aria-hidden />
+              </button>
             </form>
           </section>
         </div>
