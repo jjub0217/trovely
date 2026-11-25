@@ -19,7 +19,7 @@
 - 작은 컬렉션 기준: `SMALL_COLLECTION_THRESHOLD = 10`(게시물 10개 이상이면 그대로 카테고리, 10개 미만이면 AI).
 - 뜻 검색 결과: 카테고리 필터 안에서 가까운 순 상위 20개, 자르는 기준 없음. 뜻 검색 모드에서는 정렬 메뉴와 이어 불러오기를 끈다. 화면 표시 문구: `뜻으로 찾은 결과(가까운 순)`.
 - 측정 기준: 정답이 상위 5개 안에 든 비율(주), 상위 5개에 섞인 엉뚱한 게시물 수(보조).
-- AI 답(Task 11): 관리자 계정에서 엔터를 눌렀을 때만. AI에게 건네는 릴스 `ANSWER_CONTEXT_SIZE = 5`, 목록 20개. 화면 문구는 설계 5-6을 그대로 쓴다.
+- AI 답(Task 11): 관리자 계정에만 보이는 "AI 답 받기" 버튼을 눌렀을 때만(검색은 모든 계정에서 엔터). AI에게 건네는 릴스 `ANSWER_CONTEXT_SIZE = 5`, 목록 20개. 화면 문구는 설계 5-6을 그대로 쓴다.
 - 비밀값(`GEMINI_API_KEY`)은 `.env.local`과 Vercel 환경변수에만. 화면이나 로그에 출력하지 않는다. `.env.example`에는 키 이름만.
 - 사용자의 내보내기 파일은 저장소에 넣지 않는다. 로컬 사본 위치: `~/trovely-import/`(저장소 밖).
 - 기술 블로그: 각 Task 끝에 `~/Desktop/blog-drafts/blog-draft-trovely-rag.md`의 "작업 로그"에 날짜와 한 줄(무엇을 했고 무엇을 알게 됐는지)을 덧붙인다. 큰 단계(Task 6, 9, 11, 13) 뒤에는 백그라운드 에이전트가 로그를 바탕으로 본문을 정리한다.
@@ -295,7 +295,7 @@
 - Create: `src/lib/search/ask.ts`, Test: `src/lib/search/ask.test.ts`
 - Create: `src/lib/search/ask-actions.ts`("use server")
 - Create: `src/components/ask-answer.tsx`
-- Modify: `src/components/search-bar.tsx`(엔터 처리, 안내 문구), `src/app/(main)/page.tsx`(답 영역 자리, 관리자 여부 전달)
+- Modify: `src/components/search-bar.tsx`(안내 문구), `src/app/(main)/page.tsx`(답 버튼과 답 영역 자리, 관리자 여부 전달). 엔터 검색은 Task 9에서 이미 구현.
 - Delete: `src/app/(main)/_ask-mockup/`, `src/app/(main)/mockup-ask-a/`, `src/app/(main)/mockup-ask-b/`(커밋하지 않은 시안)
 
 **Interfaces:**
@@ -312,7 +312,7 @@
 - [ ] **Step 1: 실패하는 테스트** — `validateChips`(모르는 kind, 빈 label, 서로 반대 조건, 중복), `searchTextFrom`(칩 없음 → 질문 그대로, keyword만 이어 붙임), `visitedFilterFrom`, `validateAnswer`(건네지 않은 id 버림, 모두 버려지면 `notFound`, 정상).
 - [ ] **Step 2:** FAIL 확인. **Step 3:** 구현. **Step 4:** PASS, `npx tsc --noEmit` 0.
 - [ ] **Step 5:** 화면 연결. 시안 a(`mockup-ask-a`)와 같은 자리, 같은 문구. 시안 파일 지우기.
-- [ ] **Step 6: 수동 확인(사용자)** — 관리자 계정에서 "이번 주말 파주에서 안 가 본 데이트 장소 있어?" 엔터 → 칩에 `안 가 본 곳만`, 목록에 별표 빈 릴스만, 근거 표시. `안 가 본 곳만` × → 가 본 릴스도 나옴. 관리자 아닌 계정에서는 엔터가 검색만 함.
+- [ ] **Step 6: 수동 확인(사용자)** — 관리자 계정에서 "이번 주말 파주에서 안 가 본 데이트 장소 있어?" 엔터로 검색 → "AI 답 받기" → 칩에 `안 가 본 곳만`, 목록에 별표 빈 릴스만, 근거 표시. `안 가 본 곳만` × → 가 본 릴스도 나옴. 관리자 아닌 계정에서는 답 버튼이 보이지 않음.
 - [ ] **Step 7: 측정** — 설계 5-6의 시험 질문 5개를 사용자와 정하고, 칩, 답, 근거, 맞다/틀리다, 버린 id 수를 `docs/search-eval/answers-YYYY-MM-DD.md`에 기록.
 - [ ] **Step 8:** 블로그 로그 + 백그라운드 에이전트로 "생성 단계 붙이기" 단락 정리. 커밋.
 
