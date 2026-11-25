@@ -9,7 +9,7 @@ import { normalizeTagNames } from "@/lib/tag-name";
 import { requestSuggestions, SUGGEST_BATCH_SIZE } from "./suggest";
 import { describeAiError } from "@/lib/ai/gemini";
 import { ADD_CHUNK_SIZE } from "./plan-import";
-import { finalCategories, groupOf, REVIEWABLE_WHERE, type GroupKind } from "./review";
+import { finalCategories, groupOf, REVIEWABLE_WHERE, suggestionUpdate, type GroupKind } from "./review";
 
 const DEMO_ERROR = { error: "데모 모드에서는 가져오기를 쓸 수 없습니다" } as const;
 
@@ -80,6 +80,9 @@ export async function addCandidates(
   };
 }
 
+/** 한 번 호출에 AI 요청을 몇 개까지 동시에 보낼지 */
+const SUGGEST_PARALLEL = 4;
+
 export async function runSuggestions(
   batchId: string,
 ): Promise<{ processed: number; remaining: number } | { error: string }> {
@@ -87,13 +90,15 @@ export async function runSuggestions(
   const userId = await requireAdmin();
   if (!(await ownBatch(batchId, userId))) return { error: "가져오기 작업을 찾을 수 없습니다" };
 
+  // 모든 게시물에 AI 태그를 붙인다(2026-11-25 사용자 결정). 카테고리가 필요한 게시물부터.
   const todo = await prisma.importCandidate.findMany({
-    // AI는 카테고리가 필요한 게시물에만 쓴다(큰 컬렉션 게시물은 태그 없이 저장, 2026-11-24 사용자 결정)
-    where: { batchId, suggested: false, status: "pending", needsAi: true },
-    orderBy: { savedAt: "desc" },
-    take: SUGGEST_BATCH_SIZE,
+    where: { batchId, suggested: false, status: "pending" },
+    orderBy: [{ needsAi: "desc" }, { savedAt: "desc" }],
+    take: SUGGEST_BATCH_SIZE * SUGGEST_PARALLEL,
   });
 
+  let processed = 0;
+  let firstError: unknown = null;
   if (todo.length > 0) {
     const categories = await prisma.category.findMany({ where: { userId }, select: { name: true } });
     const keptNames = await prisma.importCandidate.findMany({
@@ -105,42 +110,41 @@ export async function runSuggestions(
       ...new Set([...categories.map((c) => c.name), ...keptNames.flatMap((k) => k.keptCategories)]),
     ];
 
-    try {
-      const suggestions = await requestSuggestions(
-        todo.map((c) => ({
-          url: c.url,
-          caption: c.caption,
-          fromCollections: c.fromCollections,
-          needsCategory: c.needsAi,
-        })),
-        existingNames,
-      );
-      const byUrl = new Map(suggestions.map((s) => [s.url, s]));
-      await prisma.$transaction(
-        todo.map((c) => {
-          const s = byUrl.get(c.url);
-          return prisma.importCandidate.update({
-            where: { id: c.id },
-            data: {
-              suggested: true,
-              tags: s?.tags ?? [],
-              suggestedCategories: c.needsAi ? (s?.categories ?? []) : [],
-              newCategories: c.needsAi ? (s?.newCategories ?? []) : [],
-              uncertain: c.needsAi ? (s?.uncertain ?? true) : false,
-            },
-          });
-        }),
-      );
-    } catch (e) {
-      // 처리 못 한 후보는 suggested=false로 남아 다음 호출에서 이어서 한다.
-      return { error: describeAiError(e) };
+    const chunks: (typeof todo)[] = [];
+    for (let i = 0; i < todo.length; i += SUGGEST_BATCH_SIZE) chunks.push(todo.slice(i, i + SUGGEST_BATCH_SIZE));
+
+    const results = await Promise.allSettled(
+      chunks.map(async (chunk) => {
+        const suggestions = await requestSuggestions(
+          chunk.map((c) => ({
+            url: c.url,
+            caption: c.caption,
+            fromCollections: c.fromCollections,
+            needsCategory: c.needsAi,
+          })),
+          existingNames,
+        );
+        const byUrl = new Map(suggestions.map((s) => [s.url, s]));
+        await prisma.$transaction(
+          chunk.map((c) =>
+            prisma.importCandidate.update({ where: { id: c.id }, data: suggestionUpdate(c, byUrl.get(c.url)) }),
+          ),
+        );
+        return chunk.length;
+      }),
+    );
+    for (const r of results) {
+      if (r.status === "fulfilled") processed += r.value;
+      else firstError ??= r.reason;
     }
   }
 
+  // 처리 못 한 후보는 suggested=false로 남아 다음 호출에서 이어서 한다.
+  if (firstError && processed === 0) return { error: describeAiError(firstError) };
   const remaining = await prisma.importCandidate.count({
-    where: { batchId, suggested: false, status: "pending", needsAi: true },
+    where: { batchId, suggested: false, status: "pending" },
   });
-  return { processed: todo.length, remaining };
+  return { processed, remaining };
 }
 
 export async function getReviewGroups(batchId: string): Promise<ReviewGroup[]> {
@@ -276,8 +280,8 @@ export async function getBatchSummary(batchId: string): Promise<
   const [total, pending, aiTotal, unsuggested, saved, excluded] = await Promise.all([
     prisma.importCandidate.count({ where: { batchId } }),
     prisma.importCandidate.count({ where: { batchId, status: "pending" } }),
-    prisma.importCandidate.count({ where: { batchId, status: "pending", needsAi: true } }),
-    prisma.importCandidate.count({ where: { batchId, status: "pending", suggested: false, needsAi: true } }),
+    prisma.importCandidate.count({ where: { batchId, status: "pending" } }),
+    prisma.importCandidate.count({ where: { batchId, status: "pending", suggested: false } }),
     prisma.importCandidate.count({ where: { batchId, status: "saved" } }),
     prisma.importCandidate.count({ where: { batchId, status: "excluded" } }),
   ]);

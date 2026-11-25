@@ -132,7 +132,7 @@ export function ImportClient({ initialBatchId }: { initialBatchId: string | null
 
       {batchId && summary && (
         <section className="space-y-3 rounded-xl border border-gray-800 p-5">
-          <h2 className="font-medium">2. AI 제안(카테고리가 필요한 게시물만)</h2>
+          <h2 className="font-medium">2. AI 제안(모든 게시물에 태그, 카테고리가 필요한 게시물엔 카테고리도)</h2>
           <div className="h-2 w-full overflow-hidden rounded bg-gray-800">
             <div
               className="h-full bg-blue-500"
@@ -140,7 +140,7 @@ export function ImportClient({ initialBatchId }: { initialBatchId: string | null
             />
           </div>
           <p className="text-sm text-gray-400">
-            AI 제안 {summary.aiTotal - summary.unsuggested}/{summary.aiTotal}개 끝 · 대기 {summary.pending}개 · 저장 {summary.saved}개 · 뺌 {summary.excluded}개 · 처리 {done}/{summary.total}. 큰 컬렉션 게시물은 AI 없이 바로 아래에서 검토할 수 있습니다(태그는 나중에).
+            AI 제안 {summary.aiTotal - summary.unsuggested}/{summary.aiTotal}개 끝 · 대기 {summary.pending}개 · 저장 {summary.saved}개 · 뺌 {summary.excluded}개 · 처리 {done}/{summary.total}. AI 제안이 끝난 게시물부터 아래 묶음에 나타납니다. 직접 넣은 태그는 AI가 덮어쓰지 않습니다.
           </p>
           <button
             className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-900 disabled:opacity-40"
