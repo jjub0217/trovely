@@ -9,9 +9,6 @@ export const NO_KEYWORD_MATCH_NOTE = "검색어와 비슷한 콘텐츠를 찾았
 /** 상황 2: 낱말 결과 아래 비슷한 결과를 펼치는 버튼(2026-11-25 사용자 확정). 누르면 사라지고 펼쳐진다 */
 export const SIMILAR_MORE_BUTTON = "비슷한 콘텐츠 더 보기";
 
-/** 낱말 결과가 이 개수 이하면 버튼을 눈에 띄게 한다(2열 카드 두 줄 안, 짐작으로 정한 기준) */
-export const FEW_KEYWORD_RESULTS = 3;
-
 /** 검색창 안내 문구(2026-11-25 사용자 확정) */
 export const SEARCH_PLACEHOLDER = "검색하거나 궁금한 점을 물어보세요";
 

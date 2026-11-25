@@ -7,7 +7,7 @@ import { ReelCard } from "./reel-card";
 import { getReels } from "@/lib/actions";
 import { ReelWithRelations } from "@/types";
 import { clearListReturnState, readListReturnState } from "@/lib/list-navigation";
-import { FEW_KEYWORD_RESULTS, NO_KEYWORD_MATCH_NOTE, SIMILAR_MORE_BUTTON } from "@/lib/search/labels";
+import { NO_KEYWORD_MATCH_NOTE, SIMILAR_MORE_BUTTON } from "@/lib/search/labels";
 
 export function ReelGrid({
   initialReels,
@@ -170,8 +170,7 @@ export function ReelGrid({
   }
 
   // 상황 2: 낱말 결과를 끝까지 불러온 뒤 맨 아래에 버튼 하나. 누르면 버튼이 사라지고 펼쳐진다.
-  // 낱말 결과가 적으면(오탐 1~3개일 수도 있으니) 버튼을 눈에 띄게 한다.
-  const fewKeywordResults = reels.length <= FEW_KEYWORD_RESULTS;
+  // 결과 수와 상관없이 늘 같은 테두리 버튼(보조 행동). 결과 수로 모양을 바꿀 근거가 없어서(2026-11-25 사용자 결정).
   const similarSection = !cursor && similarReels.length > 0 && (
     <section className="px-6 pb-6">
       {similarOpen ? (
@@ -180,11 +179,7 @@ export function ReelGrid({
         <button
           type="button"
           onClick={() => setSimilarOpen(true)}
-          className={`flex h-12 w-full items-center justify-center gap-1 rounded-xl border text-sm ${
-            fewKeywordResults
-              ? "border-purple-500 bg-purple-500/20 text-purple-100"
-              : "border-gray-700 text-purple-200"
-          }`}
+          className="flex h-12 w-full items-center justify-center gap-1 rounded-xl border border-gray-700 text-sm text-purple-200"
         >
           {SIMILAR_MORE_BUTTON} ({similarReels.length})
           <ChevronDown size={16} aria-hidden />
