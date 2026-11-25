@@ -1,6 +1,5 @@
 "use server";
 
-import type { ReelSource } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { isAdmin, requireAuth } from "@/lib/auth";
 import { DEMO_MODE } from "@/lib/demo";
@@ -24,35 +23,49 @@ import {
 
 export type AskResult = { chips: AskChip[]; answer: AnswerResult; sources: ReelWithRelations[] };
 
-/**
- * AI에게 물어보기: 질문 읽기(칩) → 뜻 검색으로 릴스 5개 → 답 쓰기 → 지어냄 검사.
- * chips를 넘기면(칩 ×로 뺀 뒤 다시 할 때) 질문 읽기를 건너뛴다.
- * 측정이 끝날 때까지 관리자만(2026-11-25 사용자 결정).
- */
-export async function askReels({
-  question,
-  chips,
-  categoryId,
-  source,
-}: {
-  question: string;
-  chips?: AskChip[];
-  categoryId?: string | "uncategorized";
-  source?: ReelSource;
-}): Promise<AskResult | { error: string }> {
+async function guard(question: string): Promise<{ userId: string; q: string } | { error: string }> {
   if (DEMO_MODE) return { error: "데모 모드에서는 쓸 수 없습니다" };
   const userId = await requireAuth();
   if (!(await isAdmin())) return { error: "관리자만 쓸 수 있습니다" };
   const q = question.trim();
   if (!q) return { error: "질문을 입력해 주세요" };
+  return { userId, q };
+}
 
+/**
+ * 1단계 질문 읽기: AI가 질문에서 조건(낱말, 안 가 본 곳만 등)을 뽑는다.
+ * 화면은 이 결과를 먼저 보여 주고 답을 기다린다. 측정이 끝날 때까지 관리자만(2026-11-25 사용자 결정).
+ */
+export async function readQuestion(question: string): Promise<{ chips: AskChip[] } | { error: string }> {
+  const g = await guard(question);
+  if ("error" in g) return g;
   try {
-    const finalChips = chips ? validateChips({ chips }) : validateChips(await generateJson(buildReadPrompt(q), READ_SCHEMA));
+    return { chips: validateChips(await generateJson(buildReadPrompt(g.q), READ_SCHEMA)) };
+  } catch (e) {
+    return { error: describeAiError(e) };
+  }
+}
 
+/**
+ * 2단계 찾기와 답 쓰기: 조건으로 뜻이 가까운 릴스 5개를 고르고, AI가 답을 쓴 뒤 지어냄 검사를 한다.
+ * 조건 표시의 ×로 조건을 뺀 뒤 다시 물을 때는 이 단계만 다시 한다.
+ */
+export async function answerQuestion({
+  question,
+  chips,
+}: {
+  question: string;
+  chips: AskChip[];
+}): Promise<AskResult | { error: string }> {
+  const g = await guard(question);
+  if ("error" in g) return g;
+  const { userId, q } = g;
+  try {
+    const finalChips = validateChips({ chips });
     const ids = await semanticReelIds(
       userId,
       searchTextFrom(finalChips, q),
-      { categoryId, source, visited: visitedFilterFrom(finalChips) },
+      { visited: visitedFilterFrom(finalChips) },
       ANSWER_CONTEXT_SIZE,
     );
     if (ids.length === 0) return { chips: finalChips, answer: { notFound: true }, sources: [] };

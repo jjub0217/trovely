@@ -15,13 +15,12 @@ export const SEARCH_PLACEHOLDER = "검색 (태그, 메모, 후기, 카테고리.
 /** AI 창 제목, 봇 버튼 이름(2026-11-25 사용자 확정) */
 export const ASK_AI_BUTTON = "AI에게 물어보기";
 
-/** AI에게 물어보기 화면 문구(시안 a 문구를 "콘텐츠"로 맞춤. 바꾸고 싶으면 여기서) */
-export const ASK_LOADING = "질문을 읽고 저장한 콘텐츠를 찾는 중…";
-export const ASK_CHIPS_LABEL = "AI가 알아들은 조건";
-export const ASK_ANSWER_TITLE = "AI 답";
+/** AI에게 물어보기 창 문구(2026-11-25 사용자가 준 화면 시안 기준) */
+export const ASK_EMPTY_TITLE = "저장한 콘텐츠에 대해 궁금한 점을 물어보세요.";
+export const ASK_EXAMPLE_QUESTION = "이번 주말 파주에서 안 가 본 데이트 장소 있어?";
+export const ASK_LOADING = "저장한 콘텐츠를 살펴보고 있어요.";
 export const ASK_NOT_FOUND = "저장한 콘텐츠에서 맞는 답을 찾지 못했어요.";
-export const ASK_FOOTNOTE = "조건이 틀렸으면 ×를 눌러 빼 주세요.";
-/** 화면에는 안 보이고 스크린 리더만 읽는 카드 묶음 이름 */
+export const ASK_INPUT_PLACEHOLDER = "궁금한 점을 입력하세요";
+/** 화면에는 안 보이고 스크린 리더만 읽는 이름 */
 export const ASK_SOURCES_LABEL = "답변에 참고한 콘텐츠";
-/** AI 창 질문 입력 칸 안내(사용자 확정) */
-export const ASK_INPUT_PLACEHOLDER = "저장한 콘텐츠에 대해 궁금한 점을 물어보세요";
+export const ASK_CHIPS_LABEL = "AI가 알아들은 조건";
