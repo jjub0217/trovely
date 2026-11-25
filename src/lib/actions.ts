@@ -9,7 +9,7 @@ import { buildKeywordWhere } from "./search/keyword-where";
 import { similarExtras } from "./search/merge";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { requireAuth } from "./auth";
+import { isAdmin, requireAuth } from "./auth";
 import { normalizeReelUrl, type ReelSource } from "./reel-url";
 import { normalizeTagName, normalizeTagNames } from "./tag-name";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
@@ -270,6 +270,8 @@ export async function getSimilarReels({
   const userId = await requireAuth();
   const q = query.trim();
   if (!q) return [];
+  // 운영에서는 관리자 게시물만 벡터가 있다. 다른 가입자는 검색어를 Gemini로 보내지 않고 키워드 검색만 쓴다.
+  if (!(await isAdmin())) return [];
   const [semantic, keywordIds] = await Promise.all([
     semanticReels(userId, q, { categoryId, source }, undefined, { fast: true }),
     prisma.reel
