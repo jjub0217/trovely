@@ -1,25 +1,11 @@
 "use server";
 
-import { prisma } from "@/lib/db";
 import { isAdmin, requireAuth } from "@/lib/auth";
 import { DEMO_MODE } from "@/lib/demo";
-import { describeAiError, generateJson } from "@/lib/ai/gemini";
+import { describeAiError } from "@/lib/ai/gemini";
 import type { ReelWithRelations } from "@/types";
-import { semanticReelIds } from "./semantic";
-import { orderByIds } from "./rank";
-import {
-  ANSWER_CONTEXT_SIZE,
-  ANSWER_SCHEMA,
-  buildAnswerPrompt,
-  buildReadPrompt,
-  READ_SCHEMA,
-  searchTextFrom,
-  validateAnswer,
-  validateChips,
-  visitedFilterFrom,
-  type AnswerResult,
-  type AskChip,
-} from "./ask";
+import { answerWithChips, readChips } from "./ask-core";
+import type { AnswerResult, AskChip } from "./ask";
 
 export type AskResult = { chips: AskChip[]; answer: AnswerResult; sources: ReelWithRelations[] };
 
@@ -40,7 +26,7 @@ export async function readQuestion(question: string): Promise<{ chips: AskChip[]
   const g = await guard(question);
   if ("error" in g) return g;
   try {
-    return { chips: validateChips(await generateJson(buildReadPrompt(g.q), READ_SCHEMA)) };
+    return { chips: await readChips(g.q) };
   } catch (e) {
     return { error: describeAiError(e) };
   }
@@ -59,42 +45,9 @@ export async function answerQuestion({
 }): Promise<AskResult | { error: string }> {
   const g = await guard(question);
   if ("error" in g) return g;
-  const { userId, q } = g;
   try {
-    const finalChips = validateChips({ chips });
-    const ids = await semanticReelIds(
-      userId,
-      searchTextFrom(finalChips, q),
-      { visited: visitedFilterFrom(finalChips) },
-      ANSWER_CONTEXT_SIZE,
-    );
-    if (ids.length === 0) return { chips: finalChips, answer: { notFound: true }, sources: [] };
-
-    const reels = orderByIds(
-      await prisma.reel.findMany({
-        where: { id: { in: ids }, userId },
-        include: { categories: { include: { category: true } }, tags: { include: { tag: true } } },
-      }),
-      ids,
-    );
-    const raw = await generateJson(
-      buildAnswerPrompt(
-        q,
-        reels.map((r) => ({
-          id: r.id,
-          caption: r.caption,
-          memo: r.memo,
-          review: r.review,
-          categories: r.categories.map((c) => c.category.name),
-          tags: r.tags.map((t) => t.tag.name),
-          visited: r.visited,
-        })),
-      ),
-      ANSWER_SCHEMA,
-    );
-    const answer = validateAnswer(raw, ids);
-    const sources = "notFound" in answer ? [] : orderByIds(reels, answer.usedIds);
-    return { chips: finalChips, answer, sources };
+    const r = await answerWithChips(g.userId, g.q, chips);
+    return { chips: r.chips, answer: r.answer, sources: r.sources };
   } catch (e) {
     return { error: describeAiError(e) };
   }
