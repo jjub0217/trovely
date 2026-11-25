@@ -27,12 +27,20 @@ let pool: Pool | null = null;
 function usagePool(): Pool | null {
   const url = process.env.DEMO_USAGE_DATABASE_URL;
   if (!url) return null;
-  pool ??= new Pool({
-    connectionString: url,
-    max: 2,
-    connectionTimeoutMillis: 3000,
-    ssl: url.includes("127.0.0.1") || url.includes("localhost") ? false : { rejectUnauthorized: false },
-  });
+  if (!pool) {
+    pool = new Pool({
+      connectionString: url,
+      max: 2,
+      connectionTimeoutMillis: 3000,
+      // 쿼리가 멈춰도 3초 안에 끝낸다(검색 화면과 AI 요청이 무한정 기다리지 않게)
+      query_timeout: 3000,
+      statement_timeout: 3000,
+      // 사용량을 세는 표 하나라 인증서 검증은 끈다(운영 DB와 같은 방식). 연결 주소는 Supabase Transaction pooler(6543)를 쓴다.
+      ssl: url.includes("127.0.0.1") || url.includes("localhost") ? false : { rejectUnauthorized: false },
+    });
+    // 쉬고 있던 연결이 끊기면 pg가 error 이벤트를 낸다. 듣지 않으면 서버 프로세스가 멈출 수 있다.
+    pool.on("error", (e) => console.error("[demo-usage] 연결 오류", e.message));
+  }
   return pool;
 }
 

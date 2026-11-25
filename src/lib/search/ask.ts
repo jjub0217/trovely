@@ -4,6 +4,15 @@
 export const ANSWER_CONTEXT_SIZE = 5;
 const CAPTION_LIMIT = 800;
 
+/** 비용 상한을 지키려고 AI에 보내는 글의 길이를 막는다(데모는 누구나 서버 함수를 직접 부를 수 있다) */
+export const MAX_QUESTION_LENGTH = 300;
+export const MAX_CHIPS = 6;
+export const MAX_CHIP_LENGTH = 30;
+
+export function isQuestionTooLong(question: string): boolean {
+  return question.length > MAX_QUESTION_LENGTH;
+}
+
 export type AskChipKind = "keyword" | "unvisited" | "visited";
 export type AskChip = { label: string; kind: AskChipKind };
 
@@ -54,9 +63,10 @@ export function validateChips(raw: unknown): AskChip[] {
     const label = (item as { label?: unknown })?.label;
     if (kind !== "keyword" && kind !== "unvisited" && kind !== "visited") continue;
     const text = kind === "keyword" ? (typeof label === "string" ? label.trim() : "") : CONDITION_LABEL[kind];
-    if (!text) continue;
+    if (!text || text.length > MAX_CHIP_LENGTH) continue;
     if (out.some((c) => c.kind === kind && c.label === text)) continue;
     out.push({ label: text, kind });
+    if (out.length >= MAX_CHIPS) break;
   }
   const hasUnvisited = out.some((c) => c.kind === "unvisited");
   const hasVisited = out.some((c) => c.kind === "visited");
