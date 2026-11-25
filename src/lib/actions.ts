@@ -2,6 +2,7 @@
 
 import { prisma } from "./db";
 import { extractThumbnail } from "./og";
+import { refreshEmbeddingsAfterResponse } from "./search/embedding-refresh";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { requireAuth } from "./auth";
@@ -91,6 +92,7 @@ export async function createReel(formData: {
     },
   });
 
+  refreshEmbeddingsAfterResponse([reel.id]);
   revalidatePath("/");
   return { success: true, id: reel.id };
 }
@@ -169,6 +171,7 @@ export async function updateReel(
 
   revalidatePath("/");
   revalidatePath(`/reels/${id}`);
+  refreshEmbeddingsAfterResponse([id]);
   return { success: true };
 }
 
@@ -357,6 +360,14 @@ export async function createTag(name: string) {
   return { success: true, tag };
 }
 
+async function reelIdsWithCategory(categoryId: string): Promise<string[]> {
+  return (await prisma.reelCategory.findMany({ where: { categoryId }, select: { reelId: true } })).map((r) => r.reelId);
+}
+
+async function reelIdsWithTag(tagId: string): Promise<string[]> {
+  return (await prisma.reelTag.findMany({ where: { tagId }, select: { reelId: true } })).map((r) => r.reelId);
+}
+
 export async function updateCategory(id: string, name: string) {
   if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
@@ -372,6 +383,7 @@ export async function updateCategory(id: string, name: string) {
   if (existing) return { error: "이미 존재하는 카테고리입니다" };
 
   await prisma.category.update({ where: { id }, data: { name: trimmed } });
+  refreshEmbeddingsAfterResponse(await reelIdsWithCategory(id));
   revalidatePath("/");
   revalidatePath("/categories");
   return { success: true };
@@ -395,6 +407,7 @@ export async function updateTag(id: string, name: string) {
     where: { id },
     data: { name: normalized },
   });
+  refreshEmbeddingsAfterResponse(await reelIdsWithTag(id));
   revalidatePath("/");
   revalidatePath("/archive");
   revalidatePath(`/reels/${id}`);
@@ -408,7 +421,9 @@ export async function deleteCategory(id: string) {
   const category = await prisma.category.findFirst({ where: { id, userId } });
   if (!category) return { error: "카테고리를 찾을 수 없습니다" };
 
+  const affectedReels = await reelIdsWithCategory(id);
   await prisma.category.delete({ where: { id } });
+  refreshEmbeddingsAfterResponse(affectedReels);
   revalidatePath("/");
   revalidatePath("/categories");
   return { success: true };
@@ -420,7 +435,9 @@ export async function deleteTag(id: string) {
   const tag = await prisma.tag.findFirst({ where: { id, userId } });
   if (!tag) return { error: "태그를 찾을 수 없습니다" };
 
+  const affectedReels = await reelIdsWithTag(id);
   await prisma.tag.delete({ where: { id } });
+  refreshEmbeddingsAfterResponse(affectedReels);
   revalidatePath("/");
   revalidatePath("/archive");
   revalidatePath("/tags");

@@ -9,6 +9,7 @@ import { normalizeTagNames } from "@/lib/tag-name";
 import { requestSuggestions, SUGGEST_BATCH_SIZE } from "./suggest";
 import { describeAiError } from "@/lib/ai/gemini";
 import { ADD_CHUNK_SIZE } from "./plan-import";
+import { refreshEmbeddingsAfterResponse } from "@/lib/search/embedding-refresh";
 import { finalCategories, groupOf, REVIEWABLE_WHERE, suggestionUpdate, type GroupKind } from "./review";
 
 const DEMO_ERROR = { error: "데모 모드에서는 가져오기를 쓸 수 없습니다" } as const;
@@ -268,6 +269,7 @@ export async function saveGroup(
   }
 
   revalidatePath("/");
+  refreshEmbeddingsAfterResponse(reelIds);
   return { saved: reelIds.length, reelIds };
 }
 
