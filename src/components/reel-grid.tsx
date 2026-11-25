@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { ReelCard } from "./reel-card";
 import { getReels } from "@/lib/actions";
 import { ReelWithRelations } from "@/types";
 import { clearListReturnState, readListReturnState } from "@/lib/list-navigation";
-import { NO_KEYWORD_MATCH_NOTE, SIMILAR_LESS_BUTTON, SIMILAR_MORE_BUTTON } from "@/lib/search/labels";
+import { FEW_KEYWORD_RESULTS, NO_KEYWORD_MATCH_NOTE, SIMILAR_MORE_BUTTON } from "@/lib/search/labels";
 
 export function ReelGrid({
   initialReels,
@@ -39,7 +40,7 @@ export function ReelGrid({
   // 서버가 새 initialReels를 보내면(검색·필터·갱신) 누적 상태 리셋.
   // useEffect+setState 대신 "렌더 중 prop 변화 감지"로 처리 (React 공식 패턴, set-state-in-effect 회피).
   const [prevInitialReels, setPrevInitialReels] = useState(initialReels);
-  // 상황 2(낱말 결과가 있을 때) 비슷한 릴스는 접어 두고, 새로 검색하면 다시 접는다
+  // 상황 2(낱말 결과가 있을 때) 비슷한 릴스는 버튼을 눌러야 펼치고, 새로 검색하면 다시 접는다
   const [similarOpen, setSimilarOpen] = useState(false);
   if (initialReels !== prevInitialReels) {
     setPrevInitialReels(initialReels);
@@ -168,19 +169,27 @@ export function ReelGrid({
     );
   }
 
-  // 상황 2: 낱말 결과를 끝까지 불러온 뒤, 접어 둔 비슷한 릴스를 버튼으로 펼친다
+  // 상황 2: 낱말 결과를 끝까지 불러온 뒤 맨 아래에 버튼 하나. 누르면 버튼이 사라지고 펼쳐진다.
+  // 낱말 결과가 적으면(오탐 1~3개일 수도 있으니) 버튼을 눈에 띄게 한다.
+  const fewKeywordResults = reels.length <= FEW_KEYWORD_RESULTS;
   const similarSection = !cursor && similarReels.length > 0 && (
     <section className="px-6 pb-6">
-      <div className="mb-3 border-t border-gray-800" />
-      <button
-        type="button"
-        aria-expanded={similarOpen}
-        onClick={() => setSimilarOpen((v) => !v)}
-        className="mb-3 w-full rounded-xl border border-gray-700 py-2.5 text-sm text-gray-300"
-      >
-        {similarOpen ? SIMILAR_LESS_BUTTON : `${SIMILAR_MORE_BUTTON} (${similarReels.length})`}
-      </button>
-      {similarOpen && similarGrid}
+      {similarOpen ? (
+        similarGrid
+      ) : (
+        <button
+          type="button"
+          onClick={() => setSimilarOpen(true)}
+          className={`flex h-12 w-full items-center justify-center gap-1 rounded-xl border text-sm ${
+            fewKeywordResults
+              ? "border-purple-500 bg-purple-500/20 text-purple-100"
+              : "border-gray-700 text-purple-200"
+          }`}
+        >
+          {SIMILAR_MORE_BUTTON} ({similarReels.length})
+          <ChevronDown size={16} aria-hidden />
+        </button>
+      )}
     </section>
   );
 
@@ -195,7 +204,7 @@ export function ReelGrid({
 
   return (
     <>
-      <div className="px-6 pb-6">
+      <div className={similarReels.length > 0 && !cursor ? "px-6 pb-3" : "px-6 pb-6"}>
         <div className="grid grid-cols-2 gap-3.5">
           {reels.map((reel, index) => (
             <ReelCard key={reel.id} reel={reel} priority={index < 2} />
