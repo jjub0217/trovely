@@ -4,6 +4,7 @@ import { prisma } from "./db";
 import { extractThumbnail } from "./og";
 import { refreshEmbeddingsAfterResponse } from "./search/embedding-refresh";
 import { semanticReels } from "./search/semantic";
+import { buildKeywordWhere } from "./search/keyword-where";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { requireAuth } from "./auth";
@@ -221,38 +222,7 @@ export async function getReels({
 }) {
   if (DEMO_MODE) return getMockReels({ search, categoryId, source, status, sort, cursor, take });
   const userId = await requireAuth();
-  const where: Prisma.ReelWhereInput = { userId };
-
-  if (source) {
-    where.source = source;
-  }
-
-  if (categoryId === "uncategorized") {
-    where.categories = { none: {} };
-  } else if (categoryId) {
-    where.categories = { some: { categoryId } };
-  }
-
-  if (status === "visited") {
-    where.visited = true;
-  } else if (status === "unvisited") {
-    where.visited = false;
-  } else if (status === "reviewed") {
-    where.review = { not: null };
-  }
-
-  if (search) {
-    const keywords = search.trim().split(/\s+/).filter(Boolean);
-    where.AND = keywords.map((keyword) => ({
-      OR: [
-        { memo: { contains: keyword, mode: "insensitive" as const } },
-        { review: { contains: keyword, mode: "insensitive" as const } },
-        { caption: { contains: keyword, mode: "insensitive" as const } },
-        { tags: { some: { tag: { name: { contains: keyword, mode: "insensitive" as const } } } } },
-        { categories: { some: { category: { name: { contains: keyword, mode: "insensitive" as const } } } } },
-      ],
-    }));
-  }
+  const where = buildKeywordWhere({ userId, search, categoryId, source, status });
 
   const orderBy: Prisma.ReelOrderByWithRelationInput[] =
     sort === "oldest"
