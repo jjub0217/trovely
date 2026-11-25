@@ -11,6 +11,7 @@ import {
   runSuggestions,
   type ReviewGroup,
 } from "@/lib/instagram-import/actions";
+import Link from "next/link";
 import { GroupPanel } from "./group-panel";
 
 type Summary = { total: number; pending: number; aiTotal: number; unsuggested: number; saved: number; excluded: number };
@@ -153,6 +154,12 @@ export function ImportClient({ initialBatchId }: { initialBatchId: string | null
       )}
 
       {message && <p className="text-sm text-gray-300">{message}</p>}
+
+      {summary && summary.saved > 0 && (
+        <Link href="/admin/import/retag" className="inline-block rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-200">
+          저장한 릴스 태그 다시 보기 ({summary.saved}개)
+        </Link>
+      )}
 
       {batchId && groups.length > 0 && (
         <section className="space-y-3 rounded-xl border border-gray-800 p-5">
