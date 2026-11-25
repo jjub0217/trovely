@@ -11,10 +11,10 @@ test("demoLimit: 기본값과 환경변수", () => {
   delete process.env.DEMO_LIMIT_SEARCH;
   delete process.env.DEMO_LIMIT_ASK;
   assert.equal(demoLimit("search"), 300);
-  assert.equal(demoLimit("ask"), 30);
+  assert.equal(demoLimit("ask"), 60);
   process.env.DEMO_LIMIT_ASK = "2";
   assert.equal(demoLimit("ask"), 2);
   process.env.DEMO_LIMIT_ASK = "abc";
-  assert.equal(demoLimit("ask"), 30);
+  assert.equal(demoLimit("ask"), 60);
   delete process.env.DEMO_LIMIT_ASK;
 });

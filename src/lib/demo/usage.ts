@@ -6,7 +6,8 @@ import { Pool } from "pg";
  */
 export type DemoUsageKind = "search" | "ask";
 
-const DEFAULT_LIMIT: Record<DemoUsageKind, number> = { search: 300, ask: 30 };
+// ask는 AI를 부르는 요청 단위(질문 하나 = 질문 읽기 + 답 쓰기 2회, 약 30개 질문)
+const DEFAULT_LIMIT: Record<DemoUsageKind, number> = { search: 300, ask: 60 };
 
 export { DEMO_QUOTA_MESSAGE } from "./quota-message";
 
