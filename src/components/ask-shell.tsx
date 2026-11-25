@@ -102,14 +102,18 @@ export function AskShell({ enabled, children }: { enabled: boolean; children: Re
         </div>
       )}
 
-      {visible && (
-        <div className="fixed inset-0 z-40">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />
+      {enabled && onHome && (
+        // 사이드바와 같은 방식: 늘 그려 두고 열고 닫을 때 아래에서 올라오고 내려간다(움직임 줄이기 설정이면 바로 바뀜)
+        <div className={`fixed inset-0 z-40 ${visible ? "" : "pointer-events-none"}`} aria-hidden={!visible} inert={!visible}>
+          <div
+            className={`absolute inset-0 bg-black/60 transition-opacity duration-300 motion-reduce:transition-none ${visible ? "opacity-100" : "opacity-0"}`}
+            onClick={() => setOpen(false)}
+          />
           <section
             role="dialog"
             aria-modal="true"
             aria-label={ASK_AI_BUTTON}
-            className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[85vh] max-w-[420px] flex-col rounded-t-3xl bg-gray-800"
+            className={`absolute inset-x-0 bottom-0 mx-auto flex max-h-[85vh] max-w-[420px] flex-col rounded-t-3xl bg-gray-800 transition-transform duration-300 ease-out motion-reduce:transition-none ${visible ? "translate-y-0" : "translate-y-full"}`}
           >
             <div className="flex justify-center pt-3" aria-hidden>
               <span className="h-1 w-10 rounded-full bg-gray-600" />
