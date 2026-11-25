@@ -123,7 +123,7 @@ export function AskShell({ enabled, children }: { enabled: boolean; children: Re
 
             <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
               {answer.status === "idle" ? (
-                <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+                <div className="flex flex-col items-center justify-center gap-4 pt-10 pb-0 text-center">
                   <Bot size={36} className="text-purple-300" aria-hidden />
                   <p className="text-base text-gray-100">{ASK_EMPTY_TITLE}</p>
                   <button type="button" onClick={() => setInput(ASK_EXAMPLE_QUESTION)} className="text-sm text-gray-400 hover:text-gray-300">
