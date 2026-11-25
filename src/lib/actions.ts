@@ -3,6 +3,7 @@
 import { prisma } from "./db";
 import { extractThumbnail } from "./og";
 import { refreshEmbeddingsAfterResponse } from "./search/embedding-refresh";
+import { semanticReels } from "./search/semantic";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { requireAuth } from "./auth";
@@ -246,6 +247,7 @@ export async function getReels({
       OR: [
         { memo: { contains: keyword, mode: "insensitive" as const } },
         { review: { contains: keyword, mode: "insensitive" as const } },
+        { caption: { contains: keyword, mode: "insensitive" as const } },
         { tags: { some: { tag: { name: { contains: keyword, mode: "insensitive" as const } } } } },
         { categories: { some: { category: { name: { contains: keyword, mode: "insensitive" as const } } } } },
       ],
@@ -277,6 +279,23 @@ export async function getReels({
   const nextCursor = hasMore ? items[items.length - 1].id : null;
 
   return { items, nextCursor };
+}
+
+/** 뜻 검색: 고른 카테고리, 출처 안에서 검색어와 뜻이 가까운 순 상위 20개 */
+export async function searchReelsSemantic({
+  query,
+  categoryId,
+  source,
+}: {
+  query: string;
+  categoryId?: string | "uncategorized";
+  source?: ReelSource;
+}) {
+  if (DEMO_MODE) return { items: (await getMockReels({ search: query, categoryId, source, take: 20 })).items };
+  const userId = await requireAuth();
+  const q = query.trim();
+  if (!q) return { items: [] };
+  return { items: await semanticReels(userId, q, { categoryId, source }) };
 }
 
 export async function getReel(id: string) {
