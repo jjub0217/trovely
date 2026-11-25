@@ -8,6 +8,7 @@ import { getReels } from "@/lib/actions";
 import { ReelWithRelations } from "@/types";
 import { clearListReturnState, readListReturnState } from "@/lib/list-navigation";
 import { NO_KEYWORD_MATCH_NOTE, SIMILAR_MORE_BUTTON } from "@/lib/search/labels";
+import { DEMO_QUOTA_MESSAGE } from "@/lib/demo/quota-message";
 
 export function ReelGrid({
   initialReels,
@@ -18,10 +19,13 @@ export function ReelGrid({
   status,
   sort,
   similarReels = [],
+  similarLimited = false,
 }: {
   initialReels: ReelWithRelations[];
   /** 낱말 결과를 끝까지 불러온 뒤 아래에 붙이는 "뜻이 비슷한 릴스"(홈 화면 검색만) */
   similarReels?: ReelWithRelations[];
+  /** 데모 하루 사용량을 넘어서 비슷한 콘텐츠를 못 불러온 경우 */
+  similarLimited?: boolean;
   initialCursor: string | null;
   search?: string;
   categoryId?: string;
@@ -171,6 +175,10 @@ export function ReelGrid({
 
   // 상황 2: 낱말 결과를 끝까지 불러온 뒤 맨 아래에 버튼 하나. 누르면 버튼이 사라지고 펼쳐진다.
   // 결과 수와 상관없이 늘 같은 테두리 버튼(보조 행동). 결과 수로 모양을 바꿀 근거가 없어서(2026-11-25 사용자 결정).
+  const quotaNote = similarLimited && !cursor && (
+    <p className="px-6 pb-6 text-center text-xs text-gray-500">{DEMO_QUOTA_MESSAGE}</p>
+  );
+
   const similarSection = !cursor && similarReels.length > 0 && (
     <section className="px-6 pb-6">
       {similarOpen ? (
@@ -191,9 +199,12 @@ export function ReelGrid({
   if (reels.length === 0) {
     const hasFilters = Boolean(search || categoryId || status);
     return (
-      <div className="px-6 py-12 text-center text-gray-500 text-sm">
-        {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
-      </div>
+      <>
+        <div className="px-6 py-12 text-center text-gray-500 text-sm">
+          {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
+        </div>
+        {quotaNote}
+      </>
     );
   }
 
@@ -212,6 +223,7 @@ export function ReelGrid({
         )}
       </div>
       {similarSection}
+      {quotaNote}
     </>
   );
 }

@@ -8,7 +8,7 @@ export type DemoUsageKind = "search" | "ask";
 
 const DEFAULT_LIMIT: Record<DemoUsageKind, number> = { search: 300, ask: 30 };
 
-export const DEMO_QUOTA_MESSAGE = "오늘 데모에서 쓸 수 있는 횟수를 다 썼어요. 내일 다시 써 주세요.";
+export { DEMO_QUOTA_MESSAGE } from "./quota-message";
 
 /** 한국 시각 기준 날짜 YYYY-MM-DD */
 export function koreaDate(now: Date): string {
