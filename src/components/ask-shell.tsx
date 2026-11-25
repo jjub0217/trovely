@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ArrowUp, Bot, Loader2, X } from "lucide-react";
 import { answerQuestion, readQuestion, type AskResult } from "@/lib/search/ask-actions";
-import type { AskChip } from "@/lib/search/ask";
+import { splitParagraphs, type AskChip } from "@/lib/search/ask";
 import {
   ASK_AI_BUTTON,
   ASK_CHIPS_LABEL,
@@ -181,9 +181,13 @@ export function AskShell({ enabled, children }: { enabled: boolean; children: Re
 
                   {answer.status === "done" && (
                     <>
-                      <p className="whitespace-pre-line text-[15px] leading-relaxed text-gray-100">
-                        {"notFound" in answer.result.answer ? ASK_NOT_FOUND : answer.result.answer.text}
-                      </p>
+                      <div className="space-y-3 text-[15px] leading-relaxed text-gray-100">
+                        {"notFound" in answer.result.answer ? (
+                          <p>{ASK_NOT_FOUND}</p>
+                        ) : (
+                          splitParagraphs(answer.result.answer.text).map((para, i) => <p key={i}>{para}</p>)
+                        )}
+                      </div>
                       {answer.result.sources.length > 0 && (
                         <>
                           <hr className="border-gray-700" />

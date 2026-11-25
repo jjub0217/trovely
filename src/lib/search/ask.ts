@@ -109,7 +109,8 @@ export function buildAnswerPrompt(question: string, reels: AnswerReel[]): string
 - 아래 콘텐츠에 적힌 내용만 쓴다. 적혀 있지 않은 장소, 가격, 영업시간은 지어내지 않는다.
 - 질문에 맞는 콘텐츠가 하나도 없으면 found를 false로 한다.
 - 질문에 바로 답한다. "저장하신 콘텐츠 중에"처럼 매번 같은 말로 시작하지 않는다. 저장 이야기를 해야 할 때는 사용자가 저장했다는 게 드러나게 쓴다.
-- 담백한 "~해요"체로 3~4문장. "가 보신"처럼 지나치게 높이는 말은 쓰지 않는다. 장소 이름이 캡션에 있으면 그 이름을 쓴다.
+- 담백한 "~해요"체로 3~5문장. "가 보신"처럼 지나치게 높이는 말은 쓰지 않는다. 장소 이름이 캡션에 있으면 그 이름을 쓴다.
+- 관련된 내용끼리 문단을 나누고, 문단 사이는 빈 줄로 구분한다. 첫 문단은 질문에 대한 바로 답(어떤 곳들이 있는지), 그다음은 장소나 콘텐츠마다 한 문단씩. 한 문단은 1~2문장.
 - 방문 여부는 질문이 물을 때만 말한다. 말할 때는 "방문 완료 표시가 없는 곳"처럼 표시 기준으로 쓰고, 실제로 가지 않았다고 단정하지 않는다(가 봤지만 표시를 안 했을 수 있다).
 - usedIds에는 답에 실제로 쓴 콘텐츠의 id만 넣는다.
 
@@ -142,4 +143,12 @@ export function validateAnswer(raw: unknown, givenIds: string[]): AnswerResult {
     : [];
   if (!text || usedIds.length === 0) return { notFound: true };
   return { text, usedIds };
+}
+
+/** 답 문장을 화면에 문단으로 나눠 보여 주려고 줄바꿈 기준으로 나눈다 */
+export function splitParagraphs(text: string): string[] {
+  return text
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
 }

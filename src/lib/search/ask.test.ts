@@ -61,3 +61,14 @@ test("buildAnswerPrompt: 질문, 릴스 id, 가 봤는지가 들어간다", () =
   assert.match(p, /실제로 가지 않았다고 단정하지 않는다/);
   assert.match(p, /매번 같은 말로 시작하지 않는다/);
 });
+
+import { splitParagraphs } from "./ask";
+
+test("splitParagraphs: 빈 줄이나 줄바꿈으로 나눈 문단, 빈 문단은 버림", () => {
+  assert.deepEqual(splitParagraphs("첫 문단이에요.\n\n둘째 문단이에요.\n셋째예요.\n\n\n"), ["첫 문단이에요.", "둘째 문단이에요.", "셋째예요."]);
+  assert.deepEqual(splitParagraphs("한 문단뿐이에요."), ["한 문단뿐이에요."]);
+});
+
+test("buildAnswerPrompt: 관련된 내용끼리 문단을 나누라는 규칙", () => {
+  assert.match(buildAnswerPrompt("q", []), /문단/);
+});
