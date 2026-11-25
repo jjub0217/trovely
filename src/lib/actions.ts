@@ -2,9 +2,11 @@
 
 import { prisma } from "./db";
 import { extractThumbnail } from "./og";
+import type { ReelWithRelations } from "@/types";
 import { refreshEmbeddingsAfterResponse } from "./search/embedding-refresh";
 import { semanticReels } from "./search/semantic";
 import { buildKeywordWhere } from "./search/keyword-where";
+import { similarExtras } from "./search/merge";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { requireAuth } from "./auth";
@@ -251,8 +253,11 @@ export async function getReels({
   return { items, nextCursor };
 }
 
-/** 뜻 검색: 고른 카테고리, 출처 안에서 검색어와 뜻이 가까운 순 상위 20개 */
-export async function searchReelsSemantic({
+/**
+ * 낱말 결과 아래에 붙일 "뜻이 비슷한 릴스": 고른 카테고리, 출처 안에서 뜻이 가까운 순 상위 20개 중
+ * 낱말 검색에 이미 걸린 릴스를 뺀 것(2026-11-25 측정 뒤 사용자 결정: 낱말 먼저, 뜻 결과는 그 아래).
+ */
+export async function getSimilarReels({
   query,
   categoryId,
   source,
@@ -260,12 +265,19 @@ export async function searchReelsSemantic({
   query: string;
   categoryId?: string | "uncategorized";
   source?: ReelSource;
-}) {
-  if (DEMO_MODE) return { items: (await getMockReels({ search: query, categoryId, source, take: 20 })).items };
+}): Promise<ReelWithRelations[]> {
+  if (DEMO_MODE) return [];
   const userId = await requireAuth();
   const q = query.trim();
-  if (!q) return { items: [] };
-  return { items: await semanticReels(userId, q, { categoryId, source }) };
+  if (!q) return [];
+  const [semantic, keywordIds] = await Promise.all([
+    semanticReels(userId, q, { categoryId, source }),
+    prisma.reel
+      .findMany({ where: buildKeywordWhere({ userId, search: q, categoryId, source }), select: { id: true } })
+      .then((rows) => rows.map((r) => r.id)),
+  ]);
+  const extra = new Set(similarExtras(keywordIds, semantic.map((r) => r.id)));
+  return semantic.filter((r) => extra.has(r.id));
 }
 
 export async function getReel(id: string) {

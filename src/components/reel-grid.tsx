@@ -6,6 +6,7 @@ import { ReelCard } from "./reel-card";
 import { getReels } from "@/lib/actions";
 import { ReelWithRelations } from "@/types";
 import { clearListReturnState, readListReturnState } from "@/lib/list-navigation";
+import { SIMILAR_SECTION_LABEL } from "@/lib/search/labels";
 
 export function ReelGrid({
   initialReels,
@@ -15,8 +16,11 @@ export function ReelGrid({
   source,
   status,
   sort,
+  similarReels = [],
 }: {
   initialReels: ReelWithRelations[];
+  /** 낱말 결과를 끝까지 불러온 뒤 아래에 붙이는 "뜻이 비슷한 릴스"(홈 화면 검색만) */
+  similarReels?: ReelWithRelations[];
   initialCursor: string | null;
   search?: string;
   categoryId?: string;
@@ -143,27 +147,45 @@ export function ReelGrid({
     return () => observer.disconnect();
   }, [loadMore]);
 
+  const showSimilar = !cursor && similarReels.length > 0;
+  const similarSection = showSimilar && (
+    <section className="px-6 pb-6" aria-label={SIMILAR_SECTION_LABEL}>
+      <h2 className="mb-3 text-xs text-gray-500">{SIMILAR_SECTION_LABEL}</h2>
+      <div className="grid grid-cols-2 gap-3.5">
+        {similarReels.map((reel) => (
+          <ReelCard key={reel.id} reel={reel} />
+        ))}
+      </div>
+    </section>
+  );
+
   if (reels.length === 0) {
     const hasFilters = Boolean(search || categoryId || status);
     return (
-      <div className="px-6 py-12 text-center text-gray-500 text-sm">
-        {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
-      </div>
+      <>
+        <div className={`px-6 text-center text-gray-500 text-sm ${showSimilar ? "py-6" : "py-12"}`}>
+          {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
+        </div>
+        {similarSection}
+      </>
     );
   }
 
   return (
-    <div className="px-6 pb-6">
-      <div className="grid grid-cols-2 gap-3.5">
-        {reels.map((reel, index) => (
-          <ReelCard key={reel.id} reel={reel} priority={index < 2} />
-        ))}
-      </div>
-      {cursor && (
-        <div ref={observerRef} className="py-4 text-center">
-          {loading && <span className="text-gray-500 text-sm">로딩 중...</span>}
+    <>
+      <div className="px-6 pb-6">
+        <div className="grid grid-cols-2 gap-3.5">
+          {reels.map((reel, index) => (
+            <ReelCard key={reel.id} reel={reel} priority={index < 2} />
+          ))}
         </div>
-      )}
-    </div>
+        {cursor && (
+          <div ref={observerRef} className="py-4 text-center">
+            {loading && <span className="text-gray-500 text-sm">로딩 중...</span>}
+          </div>
+        )}
+      </div>
+      {similarSection}
+    </>
   );
 }
