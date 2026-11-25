@@ -71,3 +71,15 @@ test("이름이 같은 컬렉션은 하나로 합쳐 크기를 센다", () => {
   });
   assert.ok(result.items.every((i) => i.keptCategories.includes("요리") && !i.needsAi));
 });
+
+import { chooseBatchId } from "./plan-import";
+
+test("chooseBatchId: 후보가 하나도 없는 빈 배치는 건너뛰고 가장 최근 배치를 고른다(같은 파일을 다시 올린 경우)", () => {
+  const batches = [
+    { id: "empty-new", candidateCount: 0 },
+    { id: "old", candidateCount: 2831 },
+  ];
+  assert.equal(chooseBatchId(batches), "old");
+  assert.equal(chooseBatchId([{ id: "a", candidateCount: 0 }]), null);
+  assert.equal(chooseBatchId([]), null);
+});

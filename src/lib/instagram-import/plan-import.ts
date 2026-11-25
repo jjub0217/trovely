@@ -62,3 +62,11 @@ export function planImport(input: {
 
   return { items, skippedExisting, droppedEmptyCollections };
 }
+
+/**
+ * 화면이 열 가져오기 배치: 최신순으로 받은 목록에서 후보가 하나라도 있는 가장 최근 배치.
+ * 같은 파일을 다시 올리면 새 배치가 비어서 생기는데, 그 빈 배치 때문에 앞 배치의 대기 후보에 못 들어가는 일을 막는다.
+ */
+export function chooseBatchId(batchesNewestFirst: { id: string; candidateCount: number }[]): string | null {
+  return batchesNewestFirst.find((b) => b.candidateCount > 0)?.id ?? null;
+}

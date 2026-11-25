@@ -26,16 +26,22 @@ function RetagRow({ reel }: { reel: RetagReel }) {
   const [state, setState] = useState<SaveState>("idle");
 
   async function handleBlur() {
-    if (!tagsChanged(saved, value)) return;
+    // 저장 중에 또 벗어나면 무시한다(두 저장이 뒤바뀐 순서로 도착하지 않게)
+    if (state === "saving" || !tagsChanged(saved, value)) return;
     setState("saving");
-    const r = await setReelTags(reel.id, value);
-    if ("error" in r) {
+    try {
+      const r = await setReelTags(reel.id, value);
+      if ("error" in r) {
+        setState("failed");
+        return;
+      }
+      setSaved(r.tags);
+      setValue(r.tags.join(", "));
+      setState("saved");
+    } catch {
+      // 연결이 끊기는 등 요청 자체가 실패해도 "저장 중"에 멈추지 않게. 입력한 값은 칸에 그대로 둔다.
       setState("failed");
-      return;
     }
-    setSaved(r.tags);
-    setValue(r.tags.join(", "));
-    setState("saved");
   }
 
   return (

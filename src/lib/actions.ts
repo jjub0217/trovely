@@ -271,7 +271,7 @@ export async function getSimilarReels({
   const q = query.trim();
   if (!q) return [];
   const [semantic, keywordIds] = await Promise.all([
-    semanticReels(userId, q, { categoryId, source }),
+    semanticReels(userId, q, { categoryId, source }, undefined, { fast: true }),
     prisma.reel
       .findMany({ where: buildKeywordWhere({ userId, search: q, categoryId, source }), select: { id: true } })
       .then((rows) => rows.map((r) => r.id)),

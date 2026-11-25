@@ -6,6 +6,7 @@ import { ADD_CHUNK_SIZE, planImport } from "@/lib/instagram-import/plan-import";
 import {
   addCandidates,
   createImportBatch,
+  deleteEmptyBatch,
   getBatchSummary,
   getReviewGroups,
   runSuggestions,
@@ -68,6 +69,14 @@ export function ImportClient({ initialBatchId }: { initialBatchId: string | null
         existing += r.skippedExisting;
         pending += r.skippedPending;
         setMessage(`올리는 중… ${Math.min(i + ADD_CHUNK_SIZE, plan.items.length)} / ${plan.items.length}`);
+      }
+      if (added === 0) {
+        // 새로 넣은 후보가 없으면 빈 배치를 지우고 지금 보던 가져오기를 그대로 둔다
+        await deleteEmptyBatch(created.batchId);
+        setMessage(
+          `새로 가져올 게시물이 없습니다. 이미 Trovely에 있는 게시물 ${existing}개, 앞의 가져오기에서 검토를 기다리는 게시물 ${pending}개.`,
+        );
+        return;
       }
       setBatchId(created.batchId);
       setMessage(

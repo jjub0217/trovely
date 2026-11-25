@@ -10,6 +10,13 @@ export const TEXT_MODEL = "gemini-3.8-flash";
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const RETRY_DELAYS_MS = [1000, 2000, 4000, 8000];
+
+/** 다시 시도할 때 기다리는 시간. 검색처럼 빨라야 하는 요청은 retries 0으로 다시 시도하지 않는다 */
+export function retryDelays(retries = RETRY_DELAYS_MS.length): number[] {
+  return RETRY_DELAYS_MS.slice(0, retries);
+}
+
+export type GeminiCallOptions = { retries?: number; timeoutMs?: number };
 const EMBED_BATCH = 100;
 
 export type EmbedTaskType = "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY";
@@ -35,17 +42,18 @@ function apiKey(): string {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function postJson(path: string, body: unknown): Promise<unknown> {
+async function postJson(path: string, body: unknown, options: GeminiCallOptions = {}): Promise<unknown> {
+  const delays = retryDelays(options.retries);
   for (let attempt = 0; ; attempt++) {
     const res = await fetch(`${API_BASE}/${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(180000),
+      signal: AbortSignal.timeout(options.timeoutMs ?? 180000),
     });
     if (res.ok) return res.json();
-    if (shouldRetry(res.status) && attempt < RETRY_DELAYS_MS.length) {
-      await sleep(RETRY_DELAYS_MS[attempt]);
+    if (shouldRetry(res.status) && attempt < delays.length) {
+      await sleep(delays[attempt]);
       continue;
     }
     // 응답 본문 앞부분만(키는 헤더에 있어 본문에 나오지 않는다)
@@ -54,7 +62,7 @@ async function postJson(path: string, body: unknown): Promise<unknown> {
   }
 }
 
-export async function embedTexts(texts: string[], taskType: EmbedTaskType): Promise<number[][]> {
+export async function embedTexts(texts: string[], taskType: EmbedTaskType, options?: GeminiCallOptions): Promise<number[][]> {
   const out: number[][] = [];
   for (let i = 0; i < texts.length; i += EMBED_BATCH) {
     const chunk = texts.slice(i, i + EMBED_BATCH);
@@ -65,7 +73,7 @@ export async function embedTexts(texts: string[], taskType: EmbedTaskType): Prom
         taskType,
         outputDimensionality: EMBEDDING_DIM,
       })),
-    })) as { embeddings?: { values: number[] }[] };
+    }, options)) as { embeddings?: { values: number[] }[] };
     const embeddings = data.embeddings ?? [];
     if (embeddings.length !== chunk.length) {
       throw new Error(`임베딩 개수가 맞지 않습니다(요청 ${chunk.length}, 응답 ${embeddings.length})`);

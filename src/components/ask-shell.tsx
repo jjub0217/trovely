@@ -54,20 +54,26 @@ export function AskShell({ enabled, children }: { enabled: boolean; children: Re
   async function ask(question: string, chips?: AskChip[]) {
     const id = ++requestRef.current;
     let finalChips = chips;
-    if (!finalChips) {
-      setAnswer({ status: "reading", question });
-      const read = await readQuestion(question);
-      if (id !== requestRef.current) return;
-      if ("error" in read) {
-        setAnswer({ status: "error", question, message: read.error });
-        return;
+    try {
+      if (!finalChips) {
+        setAnswer({ status: "reading", question });
+        const read = await readQuestion(question);
+        if (id !== requestRef.current) return;
+        if ("error" in read) {
+          setAnswer({ status: "error", question, message: read.error });
+          return;
+        }
+        finalChips = read.chips;
       }
-      finalChips = read.chips;
+      setAnswer({ status: "answering", question, chips: finalChips });
+      const r = await answerQuestion({ question, chips: finalChips });
+      if (id !== requestRef.current) return;
+      setAnswer("error" in r ? { status: "error", question, chips: finalChips, message: r.error } : { status: "done", question, result: r });
+    } catch {
+      // 연결이 끊기거나 서버 시간 제한에 걸리면 요청 자체가 실패한다. 기다리는 화면에 멈추지 않게 오류로 바꾼다.
+      if (id !== requestRef.current) return;
+      setAnswer({ status: "error", question, chips: finalChips, message: "요청이 실패했어요. 잠시 뒤 다시 물어봐 주세요." });
     }
-    setAnswer({ status: "answering", question, chips: finalChips });
-    const r = await answerQuestion({ question, chips: finalChips });
-    if (id !== requestRef.current) return;
-    setAnswer("error" in r ? { status: "error", question, chips: finalChips, message: r.error } : { status: "done", question, result: r });
   }
 
   function submit(e: React.FormEvent) {

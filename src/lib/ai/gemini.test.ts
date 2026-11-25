@@ -17,3 +17,10 @@ test("describeAiError: 시간 초과와 503은 '붐빔'으로, 그 밖은 앞부
   assert.match(describeAiError(new Error("Gemini 요청 실패(503): high demand")), /붐벼/);
   assert.match(describeAiError(new Error("Gemini 요청 실패(400): bad")), /400/);
 });
+
+import { retryDelays } from "./gemini";
+
+test("retryDelays: 기본은 1, 2, 4, 8초, 빠른 요청은 다시 시도하지 않는다", () => {
+  assert.deepEqual(retryDelays(), [1000, 2000, 4000, 8000]);
+  assert.deepEqual(retryDelays(0), []);
+});

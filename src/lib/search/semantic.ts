@@ -18,8 +18,10 @@ export async function semanticReelIds(
   query: string,
   filter: SemanticFilter = {},
   take = SEMANTIC_TAKE,
+  options?: { fast?: boolean },
 ): Promise<string[]> {
-  const [values] = await embedTexts([query], "RETRIEVAL_QUERY");
+  // 홈 화면 검색은 빨라야 해서 다시 시도하지 않고 3초 안에 끝낸다(실패하면 낱말 결과만 보인다)
+  const [values] = await embedTexts([query], "RETRIEVAL_QUERY", options?.fast ? { retries: 0, timeoutMs: 3000 } : undefined);
   const vec = toVectorLiteral(values, EMBEDDING_DIM);
 
   const conds: Prisma.Sql[] = [Prisma.sql`r."userId" = ${userId}`];
@@ -43,8 +45,14 @@ export async function semanticReelIds(
 }
 
 /** 뜻 검색 결과를 목록 카드에 쓰는 모양(getReels의 items와 같은 include)으로 */
-export async function semanticReels(userId: string, query: string, filter: SemanticFilter = {}, take = SEMANTIC_TAKE) {
-  const ids = await semanticReelIds(userId, query, filter, take);
+export async function semanticReels(
+  userId: string,
+  query: string,
+  filter: SemanticFilter = {},
+  take = SEMANTIC_TAKE,
+  options?: { fast?: boolean },
+) {
+  const ids = await semanticReelIds(userId, query, filter, take, options);
   if (ids.length === 0) return [];
   const reels = await prisma.reel.findMany({
     where: { id: { in: ids }, userId },

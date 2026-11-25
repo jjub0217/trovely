@@ -8,7 +8,7 @@ import { DEMO_MODE } from "@/lib/demo";
 import { normalizeTagNames } from "@/lib/tag-name";
 import { requestSuggestions, SUGGEST_BATCH_SIZE } from "./suggest";
 import { describeAiError } from "@/lib/ai/gemini";
-import { ADD_CHUNK_SIZE } from "./plan-import";
+import { ADD_CHUNK_SIZE, chooseBatchId } from "./plan-import";
 import { refreshEmbeddingsAfterResponse } from "@/lib/search/embedding-refresh";
 import { finalCategories, groupOf, REVIEWABLE_WHERE, suggestionUpdate, type GroupKind } from "./review";
 
@@ -293,6 +293,20 @@ export async function getBatchSummary(batchId: string): Promise<
 export async function getLatestBatchId(): Promise<string | null> {
   if (DEMO_MODE) return null;
   const userId = await requireAdmin();
-  const b = await prisma.importBatch.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } });
-  return b?.id ?? null;
+  const batches = await prisma.importBatch.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, _count: { select: { candidates: true } } },
+  });
+  return chooseBatchId(batches.map((b) => ({ id: b.id, candidateCount: b._count.candidates })));
+}
+
+/** 새로 넣은 후보가 0개인 배치(같은 파일을 다시 올린 경우)는 지운다 */
+export async function deleteEmptyBatch(batchId: string): Promise<{ ok: true } | { error: string }> {
+  if (DEMO_MODE) return DEMO_ERROR;
+  const userId = await requireAdmin();
+  if (!(await ownBatch(batchId, userId))) return { error: "가져오기 작업을 찾을 수 없습니다" };
+  if ((await prisma.importCandidate.count({ where: { batchId } })) > 0) return { error: "후보가 있는 가져오기는 지우지 않습니다" };
+  await prisma.importBatch.delete({ where: { id: batchId } });
+  return { ok: true };
 }
