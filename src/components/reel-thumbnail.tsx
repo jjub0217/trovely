@@ -39,7 +39,13 @@ export function ReelThumbnail({
     setTriedRecovery(false);
   }, [src]);
 
+  const boxRef = useRef<HTMLDivElement>(null);
+
   async function handleError() {
+    await recover({ revalidate: true });
+  }
+
+  async function recover(options: { revalidate: boolean }) {
     // 이미 시도했거나 reelId 없으면 복구 불가 → 대체 UI 고정 (무한루프 차단)
     if (triedRecovery || !reelId) {
       setRecovering(false);
@@ -50,7 +56,7 @@ export function ReelThumbnail({
     setRecovering(true); // 복구 동안: 배경 펄스
     setFailed(false);
     try {
-      const { thumbnail } = await refreshThumbnail(reelId);
+      const { thumbnail } = await refreshThumbnail(reelId, options);
       if (thumbnail) {
         // 같은 URL로 재캐시될 수도 있으니 캐시버스트로 강제 재로드
         const busted = thumbnail + (thumbnail.includes("?") ? "&" : "?") + "v=" + Date.now();
@@ -77,6 +83,26 @@ export function ReelThumbnail({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSrc]);
 
+  // 썸네일이 처음부터 비어 있으면(인스타그램 가져오기 등) 카드가 화면 가까이 왔을 때 한 번만 받아 온다.
+  // 같은 1회 가드(triedRecovery)를 써서, 못 받으면 대체 UI로 남고 다시 시도하지 않는다.
+  useEffect(() => {
+    if (src || !reelId || triedRecovery) return;
+    const el = boxRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          observer.disconnect();
+          recover({ revalidate: false });
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, reelId, triedRecovery]);
+
   // 복구 중: 배경만 은은하게 펄스 (아이콘·텍스트 없음)
   if (recovering) {
     return <div className="h-full w-full animate-pulse bg-gray-600" />;
@@ -85,7 +111,7 @@ export function ReelThumbnail({
   // 썸네일 없음/복구 실패: 차분한 단색 + lucide ImageOff 아이콘만 (기본 문구 없음)
   if (!currentSrc || failed) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gray-700">
+      <div ref={boxRef} className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gray-700">
         <ImageOff className={iconClassName} size={26} strokeWidth={1.5} aria-hidden />
         {fallbackLabel && (
           <p className="max-w-[11rem] whitespace-pre-line text-center text-xs leading-relaxed text-gray-400">

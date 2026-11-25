@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractThumbnail } from "@/lib/og";
+import { extractPreview } from "@/lib/og";
 
 export async function GET(request: NextRequest) {
   const url = request.nextUrl.searchParams.get("url");
@@ -8,6 +8,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "URL is required" }, { status: 400 });
   }
 
-  const thumbnail = await extractThumbnail(url);
-  return NextResponse.json({ thumbnail });
+  const { thumbnail, caption } = await extractPreview(url);
+  return NextResponse.json({ thumbnail, caption });
 }

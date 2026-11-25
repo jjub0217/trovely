@@ -1,6 +1,7 @@
 import { isValidReelUrl, normalizeReelUrl } from "./reel-url";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
 import { cacheThumbnail } from "./thumbnail-cache";
+import { captionFromMicrolink, captionFromOembed } from "./caption";
 
 async function extractViaYoutubeOembed(url: string): Promise<string | null> {
   try {
@@ -104,4 +105,40 @@ export async function extractThumbnail(url: string): Promise<string | null> {
   if (!raw) return null;
   const cached = await cacheThumbnail(raw, url);
   return cached ?? raw;
+}
+
+async function fetchJson(apiUrl: string, timeoutMs: number): Promise<unknown> {
+  try {
+    const response = await fetch(apiUrl, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 새로 저장할 때 쓰는 미리보기: 썸네일과 캡션을 한 번의 요청으로 받는다
+ * (microlink 하루 요청 수가 적어서 썸네일, 캡션을 따로 부르지 않는다).
+ * 썸네일만 못 받으면 기존 순서(Iframely, og 태그)로 썸네일만 다시 찾는다.
+ */
+export async function extractPreview(url: string): Promise<{ thumbnail: string | null; caption: string | null }> {
+  const parsed = normalizeReelUrl(url);
+  let raw: string | null = null;
+  let caption: string | null = null;
+
+  if (parsed?.source === "youtube") {
+    const data = await fetchJson(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, 5000);
+    raw = normalizeThumbnailUrl((data as { thumbnail_url?: string } | null)?.thumbnail_url || null);
+    caption = captionFromOembed(data);
+  } else if (isValidReelUrl(url)) {
+    const data = await fetchJson(`https://api.microlink.io?url=${encodeURIComponent(url)}`, 10000);
+    raw = normalizeThumbnailUrl((data as { data?: { image?: { url?: string } } } | null)?.data?.image?.url || null);
+    caption = captionFromMicrolink(data);
+  }
+
+  if (!raw) raw = (await extractViaIframely(url)) ?? (await extractViaOgTags(url));
+  if (!raw) return { thumbnail: null, caption };
+  const cached = await cacheThumbnail(raw, url);
+  return { thumbnail: cached ?? raw, caption };
 }

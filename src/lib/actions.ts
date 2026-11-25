@@ -32,6 +32,7 @@ async function resolveThumbnail(
 export async function createReel(formData: {
   url: string;
   thumbnail?: string | null;
+  caption?: string | null;
   memo?: string;
   review?: string;
   categoryIds: string[];
@@ -75,6 +76,7 @@ export async function createReel(formData: {
     data: {
       url: normalizedUrl,
       thumbnail,
+      caption: formData.caption?.trim() || null,
       source,
       memo: memo || null,
       review: review || null,
@@ -426,7 +428,8 @@ export async function deleteTag(id: string) {
 }
 
 export async function refreshThumbnail(
-  reelId: string
+  reelId: string,
+  options: { revalidate?: boolean } = {}
 ): Promise<{ thumbnail: string | null }> {
   if (DEMO_MODE) return { thumbnail: null };
   const userId = await requireAuth();
@@ -441,7 +444,8 @@ export async function refreshThumbnail(
     where: { id: reel.id },
     data: { thumbnail: fresh },
   });
-  revalidatePath("/");
+  // 비어 있던 썸네일을 채울 때는 카드마다 홈 화면을 다시 그리지 않는다(가져온 게시물 수천 개)
+  if (options.revalidate !== false) revalidatePath("/");
 
   return { thumbnail: fresh };
 }
