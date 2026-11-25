@@ -109,7 +109,7 @@ export function AskShell({ enabled, children }: { enabled: boolean; children: Re
             role="dialog"
             aria-modal="true"
             aria-label={ASK_AI_BUTTON}
-            className="absolute inset-x-0 bottom-0 mx-auto flex h-[85vh] max-w-[420px] flex-col rounded-t-3xl bg-gray-800"
+            className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[85vh] max-w-[420px] flex-col rounded-t-3xl bg-gray-800"
           >
             <div className="flex justify-center pt-3" aria-hidden>
               <span className="h-1 w-10 rounded-full bg-gray-600" />
@@ -121,9 +121,9 @@ export function AskShell({ enabled, children }: { enabled: boolean; children: Re
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 pb-4">
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4">
               {answer.status === "idle" ? (
-                <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
                   <Bot size={36} className="text-purple-300" aria-hidden />
                   <p className="text-base text-gray-100">{ASK_EMPTY_TITLE}</p>
                   <button type="button" onClick={() => setInput(ASK_EXAMPLE_QUESTION)} className="text-sm text-gray-400 hover:text-gray-300">
