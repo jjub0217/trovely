@@ -27,3 +27,14 @@ export async function requireAdmin(): Promise<string> {
 
   return user.id;
 }
+
+/** 관리자인지 확인만 한다(돌려보내지 않음). 화면에서 관리자 전용 버튼을 보여 줄지 정할 때 쓴다. */
+export async function isAdmin(): Promise<boolean> {
+  if (DEMO_MODE) return false;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+  return Boolean(await prisma.adminRole.findUnique({ where: { userId: user.id } }));
+}

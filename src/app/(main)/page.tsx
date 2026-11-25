@@ -4,6 +4,8 @@ import { Header } from "@/components/header";
 import { ReelGrid } from "@/components/reel-grid";
 import { getReels, getCategories, getUserStats, getUserEmail, getSimilarReels } from "@/lib/actions";
 import { parseReelSource } from "@/lib/reel-url";
+import { isAdmin } from "@/lib/auth";
+import { AskAnswer } from "@/components/ask-answer";
 
 const SearchBar = nextDynamic(() => import("@/components/search-bar").then((m) => m.SearchBar));
 const CategoryFilter = nextDynamic(() => import("@/components/category-filter").then((m) => m.CategoryFilter));
@@ -32,12 +34,13 @@ export default async function HomePage({
     }
   }
 
-  const [{ items, nextCursor }, similar, categories, stats, email] = await Promise.all([
+  const [{ items, nextCursor }, similar, categories, stats, email, admin] = await Promise.all([
     getReels({ search, categoryId, source, take: 10 }),
     loadSimilar(),
     getCategories(),
     getUserStats(),
     getUserEmail(),
+    isAdmin(),
   ]);
 
   return (
@@ -54,6 +57,9 @@ export default async function HomePage({
           <CategoryFilter categories={categories} />
         </Suspense>
       </div>
+      {admin && search?.trim() && (
+        <AskAnswer key={`${search}|${categoryId ?? ""}|${source ?? ""}`} question={search} categoryId={categoryId} source={source} />
+      )}
       <ReelGrid
         initialReels={items}
         initialCursor={nextCursor}
