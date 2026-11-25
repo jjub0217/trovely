@@ -22,7 +22,7 @@
 - AI 답(Task 11): 관리자 계정에서 엔터를 눌렀을 때만. AI에게 건네는 릴스 `ANSWER_CONTEXT_SIZE = 5`, 목록 20개. 화면 문구는 설계 5-6을 그대로 쓴다.
 - 비밀값(`GEMINI_API_KEY`)은 `.env.local`과 Vercel 환경변수에만. 화면이나 로그에 출력하지 않는다. `.env.example`에는 키 이름만.
 - 사용자의 내보내기 파일은 저장소에 넣지 않는다. 로컬 사본 위치: `~/trovely-import/`(저장소 밖).
-- 기술 블로그: 각 Task 끝에 `~/Desktop/blog-drafts/blog-draft-trovely-rag.md`의 "작업 로그"에 날짜와 한 줄(무엇을 했고 무엇을 알게 됐는지)을 덧붙인다. 큰 단계(Task 6, 9, 11, 12) 뒤에는 백그라운드 에이전트가 로그를 바탕으로 본문을 정리한다.
+- 기술 블로그: 각 Task 끝에 `~/Desktop/blog-drafts/blog-draft-trovely-rag.md`의 "작업 로그"에 날짜와 한 줄(무엇을 했고 무엇을 알게 됐는지)을 덧붙인다. 큰 단계(Task 6, 9, 11, 13) 뒤에는 백그라운드 에이전트가 로그를 바탕으로 본문을 정리한다.
 
 ## Review Focus
 
@@ -33,6 +33,7 @@
 5. 관리자가 아니거나 데모 모드에서 가져오기 액션 호출 → 막는다(Task 5 수동 확인 단계).
 6. AI 답이 건네지 않은 릴스 id를 돌려주거나 아무 id도 없이 그럴듯한 답을 씀 → 버리거나 "찾지 못했어요"로 바꾼다(Task 11 테스트).
 7. 질문에서 낱말 칩이 하나도 안 나옴, 또는 칩을 모두 ×로 뺌 → 질문 문장 전체로 찾는다(Task 11 테스트).
+8. 태그 다시 보기 화면에서 칸을 건드리기만 하고 내용은 그대로 두고 나감 → 저장 요청을 보내지 않는다. 저장 실패 → 그 줄에 실패 표시, 입력한 값은 칸에 남긴다(Task 12).
 
 ---
 
@@ -54,6 +55,7 @@
 - `scripts/backfill-embeddings.ts`, `scripts/measure-search.ts`, `docs/search-eval/queries.json`
 - `src/lib/search/ask.ts` — 질문 읽기, 답 쓰기 프롬프트와 응답 검증(순수 함수) / `src/lib/search/ask-actions.ts` — AI 답 서버 액션
 - `src/components/ask-answer.tsx` — 조건 칩과 답 상자
+- `src/app/admin/import/retag/` — 가져온 릴스 태그 다시 보기(묶음별, 자동 저장)
 
 ---
 
@@ -314,7 +316,28 @@
 - [ ] **Step 7: 측정** — 설계 5-6의 시험 질문 5개를 사용자와 정하고, 칩, 답, 근거, 맞다/틀리다, 버린 id 수를 `docs/search-eval/answers-YYYY-MM-DD.md`에 기록.
 - [ ] **Step 8:** 블로그 로그 + 백그라운드 에이전트로 "생성 단계 붙이기" 단락 정리. 커밋.
 
-### Task 12: 마무리
+### Task 12: 가져온 릴스 태그 다시 보기(자동 저장)
+
+**Files:**
+- Create: `src/lib/instagram-import/retag-actions.ts`("use server"), `src/lib/instagram-import/retag.ts` + Test `retag.test.ts`
+- Create: `src/app/admin/import/retag/page.tsx`, `retag-client.tsx`
+- Modify: `src/app/admin/import/import-client.tsx`(저장된 게시물이 있으면 "저장한 릴스 태그 다시 보기" 링크)
+
+**Interfaces:**
+- Consumes: `normalizeTagNames`, `upsertReelEmbeddings`(Task 8), 기존 `ImportCandidate`(status `saved`, `url`)
+- Produces:
+  - `getRetagGroups(batchId): Promise<{ key: string; label: string; count: number }[]>` — 이 배치에서 `saved`인 후보의 `url`로 사용자 본인의 `Reel`을 찾고, 그 릴스의 지금 첫 번째 카테고리 이름으로 묶는다(카테고리 없으면 `미분류`). 지워진 릴스는 빠진다.
+  - `getRetagReels(batchId, groupKey): Promise<{ id: string; url: string; caption: string | null; categories: string[]; tags: string[] }[]>` — 저장 시각 최신순.
+  - `setReelTags(reelId, tags: string[]): Promise<{ ok: true; tags: string[] } | { error: string }>` — 본인 릴스만, 정규화한 태그로 연결을 통째로 바꾸고, 쓰이지 않게 된 태그 정리는 기존 태그 수정 규칙을 따른다. 끝나면 `upsertReelEmbeddings([reelId])`.
+  - `tagsChanged(before: string[], typed: string): boolean`(retag.ts) — 쉼표로 나눠 정규화한 결과가 순서 무시하고 같으면 false.
+- 화면: 묶음 목록 → 묶음 열기 → 줄마다 캡션 앞 80자(인스타그램 링크), 카테고리(읽기만), 태그 칸. 태그 칸에서 포커스가 빠질 때 `tagsChanged`가 true면 저장. 줄 옆 상태 `저장 중…` / `저장됨` / `저장 실패, 다시 시도해 주세요`. 관리자만, 데모 모드 막음.
+
+- [ ] **Step 1: 실패하는 테스트** — `tagsChanged`: 같은 태그 순서만 다름 → false, `#파주`와 `파주` → false, 하나 추가 → true, 모두 지움 → true.
+- [ ] **Step 2:** FAIL. **Step 3:** 구현. **Step 4:** PASS, `npx tsc --noEmit` 0.
+- [ ] **Step 5: 수동 확인(사용자)** — 묶음 하나 열어 태그 하나 고치고 다른 곳 누름 → `저장됨`, 릴스 상세 화면에 바뀐 태그, 그 릴스의 `ReelEmbedding.textHash`가 바뀜(SQL). 칸만 눌렀다 나가면 요청 없음.
+- [ ] **Step 6:** 블로그 로그. 커밋.
+
+### Task 13: 마무리
 
 - [ ] **Step 1:** `npm test` 전부 PASS, `npx tsc --noEmit` 0, `npm run build` 성공 출력 붙이기.
 - [ ] **Step 2:** 사용자에게 남은 일 보고: 운영 반영(Session pooler로 마이그레이션, 운영 Supabase에 vector 확장, Vercel에 `GEMINI_API_KEY`, 운영에서 실제 가져오기)은 사용자 확인 뒤 별도 진행. PR 생성도 요청 시에만.
