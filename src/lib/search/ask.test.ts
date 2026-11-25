@@ -57,5 +57,7 @@ test("buildAnswerPrompt: 질문, 릴스 id, 가 봤는지가 들어간다", () =
   ]);
   assert.match(p, /파주 사우나\?/);
   assert.match(p, /id: r1/);
-  assert.match(p, /가 봤는지: 아직 안 가 봄/);
+  assert.match(p, /방문 완료 표시: 없음/);
+  assert.match(p, /실제로 가지 않았다고 단정하지 않는다/);
+  assert.match(p, /매번 같은 말로 시작하지 않는다/);
 });

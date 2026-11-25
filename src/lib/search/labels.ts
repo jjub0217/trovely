@@ -10,9 +10,9 @@ export const NO_KEYWORD_MATCH_NOTE = "검색어와 비슷한 콘텐츠를 찾았
 export const SIMILAR_MORE_BUTTON = "비슷한 콘텐츠 더 보기";
 
 /** 검색창 안내 문구(2026-11-25 사용자 확정) */
-export const SEARCH_PLACEHOLDER = "검색하거나 궁금한 점을 물어보세요";
+export const SEARCH_PLACEHOLDER = "검색 (태그, 메모, 후기, 카테고리...)"; // AI 질문을 봇 창으로 옮겨서 예전 문구로(2026-11-25)
 
-/** 11단계 AI 답 버튼(2026-11-25 사용자 확정) */
+/** AI 창 제목, 봇 버튼 이름(2026-11-25 사용자 확정) */
 export const ASK_AI_BUTTON = "AI에게 물어보기";
 
 /** AI에게 물어보기 화면 문구(시안 a 문구를 "콘텐츠"로 맞춤. 바꾸고 싶으면 여기서) */
@@ -20,5 +20,8 @@ export const ASK_LOADING = "질문을 읽고 저장한 콘텐츠를 찾는 중�
 export const ASK_CHIPS_LABEL = "AI가 알아들은 조건";
 export const ASK_ANSWER_TITLE = "AI 답";
 export const ASK_NOT_FOUND = "저장한 콘텐츠에서 맞는 답을 찾지 못했어요.";
-export const ASK_FOOTNOTE = "저장한 콘텐츠에서만 골라 답해요. 조건이 틀렸으면 ×를 눌러 빼 주세요.";
-export const ASK_SOURCES_LABEL = "답에 쓴 콘텐츠";
+export const ASK_FOOTNOTE = "조건이 틀렸으면 ×를 눌러 빼 주세요.";
+/** 화면에는 안 보이고 스크린 리더만 읽는 카드 묶음 이름 */
+export const ASK_SOURCES_LABEL = "답변에 참고한 콘텐츠";
+/** AI 창 질문 입력 칸 안내(사용자 확정) */
+export const ASK_INPUT_PLACEHOLDER = "저장한 콘텐츠에 대해 궁금한 점을 물어보세요";

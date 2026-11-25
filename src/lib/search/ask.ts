@@ -93,7 +93,7 @@ export function buildAnswerPrompt(question: string, reels: AnswerReel[]): string
         `id: ${r.id}`,
         r.categories.length ? `카테고리: ${r.categories.join(", ")}` : "",
         r.tags.length ? `태그: ${r.tags.join(", ")}` : "",
-        `가 봤는지: ${r.visited ? "가 봄" : "아직 안 가 봄"}`,
+        `방문 완료 표시: ${r.visited ? "있음" : "없음"}`,
         r.caption ? `캡션: ${r.caption.slice(0, CAPTION_LIMIT)}` : "",
         r.memo ? `메모: ${r.memo}` : "",
         r.review ? `후기: ${r.review}` : "",
@@ -108,7 +108,9 @@ export function buildAnswerPrompt(question: string, reels: AnswerReel[]): string
 규칙
 - 아래 콘텐츠에 적힌 내용만 쓴다. 적혀 있지 않은 장소, 가격, 영업시간은 지어내지 않는다.
 - 질문에 맞는 콘텐츠가 하나도 없으면 found를 false로 한다.
-- 답은 한국어 "~해요"체로 3~4문장. 장소 이름이 캡션에 있으면 그 이름을 쓴다.
+- 질문에 바로 답한다. "저장하신 콘텐츠 중에"처럼 매번 같은 말로 시작하지 않는다. 저장 이야기를 해야 할 때는 사용자가 저장했다는 게 드러나게 쓴다.
+- 담백한 "~해요"체로 3~4문장. "가 보신"처럼 지나치게 높이는 말은 쓰지 않는다. 장소 이름이 캡션에 있으면 그 이름을 쓴다.
+- 방문 여부는 질문이 물을 때만 말한다. 말할 때는 "방문 완료 표시가 없는 곳"처럼 표시 기준으로 쓰고, 실제로 가지 않았다고 단정하지 않는다(가 봤지만 표시를 안 했을 수 있다).
 - usedIds에는 답에 실제로 쓴 콘텐츠의 id만 넣는다.
 
 질문: ${question}
