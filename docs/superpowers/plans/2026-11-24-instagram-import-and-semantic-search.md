@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 인스타그램 내보내기 파일로 저장 게시물 2,831개를 캡션과 함께 Trovely로 가져오고(관리자 본인 전용, 묶음별 검토), 캡션 기반 뜻 검색을 붙여 단어 검색과 비교 측정한다.
+**Goal:** 인스타그램 내보내기 파일로 저장 게시물 2,831개를 캡션과 함께 Trovely로 가져오고(관리자 본인 전용, 묶음별 검토), 캡션 기반 뜻 검색을 붙여 단어 검색과 비교 측정한 뒤, 검색창 질문에 AI가 저장한 릴스로 답하는 RAG 생성 단계까지 잇는다.
 
 **Architecture:** 내보내기 파싱과 분류 규칙은 순수 함수(`src/lib/instagram-import/`)로 두고 테스트한다. 가져오기는 임시 표(`ImportBatch`, `ImportCandidate`)에 쌓아 두고, AI 제안은 서버 액션을 여러 번 불러 조금씩 채운 뒤(이어 하기 가능), 관리자 화면에서 묶음별로 검토해 `Reel`로 저장한다. 뜻 검색은 pgvector 표(`ReelEmbedding`)와 Gemini 임베딩으로, 카테고리 필터 안에서 가까운 순 상위 20개를 돌려준다.
 
@@ -19,9 +19,10 @@
 - 작은 컬렉션 기준: `SMALL_COLLECTION_THRESHOLD = 10`(게시물 10개 이상이면 그대로 카테고리, 10개 미만이면 AI).
 - 뜻 검색 결과: 카테고리 필터 안에서 가까운 순 상위 20개, 자르는 기준 없음. 뜻 검색 모드에서는 정렬 메뉴와 이어 불러오기를 끈다. 화면 표시 문구: `뜻으로 찾은 결과(가까운 순)`.
 - 측정 기준: 정답이 상위 5개 안에 든 비율(주), 상위 5개에 섞인 엉뚱한 게시물 수(보조).
+- AI 답(Task 11): 관리자 계정에서 엔터를 눌렀을 때만. AI에게 건네는 릴스 `ANSWER_CONTEXT_SIZE = 5`, 목록 20개. 화면 문구는 설계 5-6을 그대로 쓴다.
 - 비밀값(`GEMINI_API_KEY`)은 `.env.local`과 Vercel 환경변수에만. 화면이나 로그에 출력하지 않는다. `.env.example`에는 키 이름만.
 - 사용자의 내보내기 파일은 저장소에 넣지 않는다. 로컬 사본 위치: `~/trovely-import/`(저장소 밖).
-- 기술 블로그: 각 Task 끝에 `~/Desktop/blog-drafts/blog-draft-trovely-rag.md`의 "작업 로그"에 날짜와 한 줄(무엇을 했고 무엇을 알게 됐는지)을 덧붙인다. 큰 단계(Task 6, 9, 11) 뒤에는 백그라운드 에이전트가 로그를 바탕으로 본문을 정리한다.
+- 기술 블로그: 각 Task 끝에 `~/Desktop/blog-drafts/blog-draft-trovely-rag.md`의 "작업 로그"에 날짜와 한 줄(무엇을 했고 무엇을 알게 됐는지)을 덧붙인다. 큰 단계(Task 6, 9, 11, 12) 뒤에는 백그라운드 에이전트가 로그를 바탕으로 본문을 정리한다.
 
 ## Review Focus
 
@@ -30,6 +31,8 @@
 3. AI 제안 도중 Gemini 요청 한도(429)나 시간 초과 → 처리 못 한 후보는 그대로 남고, 다시 누르면 이어서 한다(Task 5 테스트, Task 4 재시도).
 4. 가져온 뒤 메모, 태그, 카테고리를 고침 → 벡터를 다시 만든다(Task 8 테스트: 임베딩 글이 바뀌면 해시가 바뀜).
 5. 관리자가 아니거나 데모 모드에서 가져오기 액션 호출 → 막는다(Task 5 수동 확인 단계).
+6. AI 답이 건네지 않은 릴스 id를 돌려주거나 아무 id도 없이 그럴듯한 답을 씀 → 버리거나 "찾지 못했어요"로 바꾼다(Task 11 테스트).
+7. 질문에서 낱말 칩이 하나도 안 나옴, 또는 칩을 모두 ×로 뺌 → 질문 문장 전체로 찾는다(Task 11 테스트).
 
 ---
 
@@ -49,6 +52,8 @@
 - `src/components/reel-thumbnail.tsx` — 썸네일이 비어 있을 때 받아 오기
 - `prisma/schema.prisma` + 새 마이그레이션
 - `scripts/backfill-embeddings.ts`, `scripts/measure-search.ts`, `docs/search-eval/queries.json`
+- `src/lib/search/ask.ts` — 질문 읽기, 답 쓰기 프롬프트와 응답 검증(순수 함수) / `src/lib/search/ask-actions.ts` — AI 답 서버 액션
+- `src/components/ask-answer.tsx` — 조건 칩과 답 상자
 
 ---
 
@@ -282,7 +287,34 @@
 - [ ] **Step 5:** 결과를 사용자에게 보고하고, 뜻 검색을 기본값으로 둘지, 붙여 둘지 자체를 함께 정한다(설계: 낫지 않으면 붙이지 않는 것도 정상 결론).
 - [ ] **Step 6:** 블로그 로그 + 백그라운드 에이전트로 측정 결과와 결론 단락 정리. 커밋 여부 확인.
 
-### Task 11: 마무리
+### Task 11: AI 답 (질문 읽기, 찾기, 답 쓰기)
+
+**Files:**
+- Create: `src/lib/search/ask.ts`, Test: `src/lib/search/ask.test.ts`
+- Create: `src/lib/search/ask-actions.ts`("use server")
+- Create: `src/components/ask-answer.tsx`
+- Modify: `src/components/search-bar.tsx`(엔터 처리, 안내 문구), `src/app/(main)/page.tsx`(답 영역 자리, 관리자 여부 전달)
+- Delete: `src/app/(main)/_ask-mockup/`, `src/app/(main)/mockup-ask-a/`, `src/app/(main)/mockup-ask-b/`(커밋하지 않은 시안)
+
+**Interfaces:**
+- Consumes: `generateJson`(Task 4), `searchReelsSemantic`의 검색 부분(Task 9, 조건 `visited?: boolean`를 받도록 넓힌다), `describeAiError`
+- Produces:
+  - `type AskChip = { label: string; kind: "keyword" | "unvisited" | "visited" }`
+  - `validateChips(raw: unknown): AskChip[]` — 모르는 kind 버림, 빈 label 버림, `unvisited`와 `visited`가 함께 오면 둘 다 버림, 같은 칩 중복 제거.
+  - `searchTextFrom(chips: AskChip[], question: string): string` — keyword 칩을 띄어쓰기로 이어 붙임, 없으면 `question`.
+  - `visitedFilterFrom(chips: AskChip[]): boolean | undefined`
+  - `buildAnswerPrompt(question: string, reels: AnswerReel[]): string`, `ANSWER_SCHEMA`
+  - `validateAnswer(raw: unknown, givenIds: string[]): { text: string; usedIds: string[] } | { notFound: true }` — 건넨 id 밖은 버림, 남은 id가 없으면 `notFound`(AI가 "없다"고 답한 경우도 `notFound`로 같은 문구).
+  - 서버 액션 `askReels({ question, chips?, categoryId, source }): Promise<{ chips: AskChip[]; answer: { text: string; usedIds: string[] } | { notFound: true }; items: ReelWithRelations[] } | { error: string }>` — `chips`가 오면 질문 읽기를 건너뛴다(×로 뺀 뒤 다시 할 때). 관리자 아니면, 데모 모드면 `{ error }`.
+
+- [ ] **Step 1: 실패하는 테스트** — `validateChips`(모르는 kind, 빈 label, 서로 반대 조건, 중복), `searchTextFrom`(칩 없음 → 질문 그대로, keyword만 이어 붙임), `visitedFilterFrom`, `validateAnswer`(건네지 않은 id 버림, 모두 버려지면 `notFound`, 정상).
+- [ ] **Step 2:** FAIL 확인. **Step 3:** 구현. **Step 4:** PASS, `npx tsc --noEmit` 0.
+- [ ] **Step 5:** 화면 연결. 시안 a(`mockup-ask-a`)와 같은 자리, 같은 문구. 시안 파일 지우기.
+- [ ] **Step 6: 수동 확인(사용자)** — 관리자 계정에서 "이번 주말 파주에서 안 가 본 데이트 장소 있어?" 엔터 → 칩에 `안 가 본 곳만`, 목록에 별표 빈 릴스만, 근거 표시. `안 가 본 곳만` × → 가 본 릴스도 나옴. 관리자 아닌 계정에서는 엔터가 검색만 함.
+- [ ] **Step 7: 측정** — 설계 5-6의 시험 질문 5개를 사용자와 정하고, 칩, 답, 근거, 맞다/틀리다, 버린 id 수를 `docs/search-eval/answers-YYYY-MM-DD.md`에 기록.
+- [ ] **Step 8:** 블로그 로그 + 백그라운드 에이전트로 "생성 단계 붙이기" 단락 정리. 커밋.
+
+### Task 12: 마무리
 
 - [ ] **Step 1:** `npm test` 전부 PASS, `npx tsc --noEmit` 0, `npm run build` 성공 출력 붙이기.
 - [ ] **Step 2:** 사용자에게 남은 일 보고: 운영 반영(Session pooler로 마이그레이션, 운영 Supabase에 vector 확장, Vercel에 `GEMINI_API_KEY`, 운영에서 실제 가져오기)은 사용자 확인 뒤 별도 진행. PR 생성도 요청 시에만.
