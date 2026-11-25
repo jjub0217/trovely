@@ -6,7 +6,7 @@ import { ReelCard } from "./reel-card";
 import { getReels } from "@/lib/actions";
 import { ReelWithRelations } from "@/types";
 import { clearListReturnState, readListReturnState } from "@/lib/list-navigation";
-import { noKeywordMatchNote, SIMILAR_LESS_BUTTON, SIMILAR_MORE_BUTTON } from "@/lib/search/labels";
+import { NO_KEYWORD_MATCH_NOTE, SIMILAR_LESS_BUTTON, SIMILAR_MORE_BUTTON } from "@/lib/search/labels";
 
 export function ReelGrid({
   initialReels,
@@ -162,7 +162,7 @@ export function ReelGrid({
   if (reels.length === 0 && similarReels.length > 0 && search) {
     return (
       <div className="px-6 pb-6">
-        <p className="mb-3 text-sm text-gray-400">{noKeywordMatchNote(search.trim())}</p>
+        <p className="mb-3 text-sm text-gray-400">{NO_KEYWORD_MATCH_NOTE}</p>
         {similarGrid}
       </div>
     );

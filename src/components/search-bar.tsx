@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Search } from "lucide-react";
+import { SEARCH_PLACEHOLDER } from "@/lib/search/labels";
 import { syncSearchInput, type SearchInputState } from "@/lib/search/search-input-sync";
 
 export function SearchBar() {
@@ -51,7 +52,7 @@ export function SearchBar() {
           value={query}
           onChange={(e) => handleChange(e.target.value)}
           enterKeyHint="search"
-          placeholder="검색 (태그, 메모, 후기, 카테고리...)"
+          placeholder={SEARCH_PLACEHOLDER}
           className="w-full bg-gray-800 border border-gray-600 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-500"
         />
       </form>
