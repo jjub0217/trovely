@@ -1,4 +1,5 @@
 import nextDynamic from "next/dynamic";
+import { normalizeCategoryIds } from "@/lib/search/category-selection";
 import { Suspense } from "react";
 import { Header } from "@/components/header";
 import { ReelGrid } from "@/components/reel-grid";
@@ -14,18 +15,19 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; category?: string; source?: string }>;
+  searchParams: Promise<{ search?: string; category?: string | string[]; source?: string }>;
 }) {
   const params = await searchParams;
   const search = params.search;
-  const categoryId = params.category;
+  // ?category=a(옛 주소) 또는 ?category=a&category=b
+  const categoryIds = normalizeCategoryIds(params.category);
   const source = parseReelSource(params.source);
 
   // 뜻 검색이 실패해도(키 없음, AI 오류) 낱말 결과는 그대로 보여 준다
   async function loadSimilar(): Promise<{ items: Awaited<ReturnType<typeof getSimilarReels>>["items"]; limited?: boolean }> {
     if (!search?.trim()) return { items: [] };
     try {
-      return await getSimilarReels({ query: search, categoryId, source });
+      return await getSimilarReels({ query: search, categoryIds, source });
     } catch (e) {
       console.error("[search] 뜻이 비슷한 릴스를 못 불러옴", e instanceof Error ? e.message : e);
       return { items: [] };
@@ -33,7 +35,7 @@ export default async function HomePage({
   }
 
   const [{ items, nextCursor }, similar, categories, stats, email] = await Promise.all([
-    getReels({ search, categoryId, source, take: 10 }),
+    getReels({ search, categoryIds, source, take: 10 }),
     loadSimilar(),
     getCategories(),
     getUserStats(),
@@ -60,7 +62,7 @@ export default async function HomePage({
         similarReels={similar.items}
         similarLimited={similar.limited}
         search={search}
-        categoryId={categoryId}
+        categoryIds={categoryIds}
         source={source}
       />
     </div>

@@ -1,3 +1,4 @@
+import { matchesCategories } from "@/lib/search/category-selection";
 // 포털(일반 사용자) 데모용 mock 데이터.
 // DEMO_MODE에서 actions.ts의 읽기 함수들이 이 데이터를 반환한다.
 import { DEMO_USER_ID } from "@/lib/demo";
@@ -330,23 +331,19 @@ type MockReel = (typeof REELS)[number];
 
 export function getMockReels(params: {
   search?: string;
-  categoryId?: string | "uncategorized";
+  categoryIds?: string[];
   source?: "instagram" | "youtube";
   status?: string;
   sort?: string;
   cursor?: string;
   take?: number;
 }) {
-  const { search, categoryId, source, status, sort = "newest", take = 20 } = params;
+  const { search, categoryIds = [], source, status, sort = "newest", take = 20 } = params;
   let items: MockReel[] = [...REELS];
 
   if (source) items = items.filter((r) => r.source === source);
 
-  if (categoryId === "uncategorized") {
-    items = items.filter((r) => r.categories.length === 0);
-  } else if (categoryId) {
-    items = items.filter((r) => r.categories.some((c) => c.category.id === categoryId));
-  }
+  items = items.filter((r) => matchesCategories(r.categories.map((c) => c.category.id), categoryIds));
 
   if (status === "visited") items = items.filter((r) => r.visited);
   else if (status === "unvisited") items = items.filter((r) => !r.visited);

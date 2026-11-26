@@ -8,6 +8,7 @@ import { refreshEmbeddingsAfterResponse } from "./search/embedding-refresh";
 import { semanticReels } from "./search/semantic";
 import { buildKeywordWhere } from "./search/keyword-where";
 import { similarExtras } from "./search/merge";
+import { normalizeCategoryIds } from "./search/category-selection";
 import { isQuestionTooLong } from "./search/ask";
 import { demoSemanticIds } from "./search/demo-search";
 import { consumeDemoQuota } from "./demo/usage";
@@ -211,7 +212,7 @@ export async function deleteReel(id: string) {
 
 export async function getReels({
   search,
-  categoryId,
+  categoryIds: rawCategoryIds,
   source,
   status,
   sort = "newest",
@@ -219,16 +220,18 @@ export async function getReels({
   take = 20,
 }: {
   search?: string;
-  categoryId?: string | "uncategorized";
+  categoryIds?: string[];
   source?: ReelSource;
   status?: string;
   sort?: string;
   cursor?: string;
   take?: number;
 }) {
-  if (DEMO_MODE) return getMockReels({ search, categoryId, source, status, sort, cursor, take });
+  // 서버 함수는 화면 밖에서도 부를 수 있어서 들어온 값을 다시 정리한다(중복, 미분류 섞임, 상한)
+  const categoryIds = normalizeCategoryIds(rawCategoryIds);
+  if (DEMO_MODE) return getMockReels({ search, categoryIds, source, status, sort, cursor, take });
   const userId = await requireAuth();
-  const where = buildKeywordWhere({ userId, search, categoryId, source, status });
+  const where = buildKeywordWhere({ userId, search, categoryIds, source, status });
 
   const orderBy: Prisma.ReelOrderByWithRelationInput[] =
     sort === "oldest"
@@ -263,21 +266,22 @@ export async function getReels({
  */
 export async function getSimilarReels({
   query,
-  categoryId,
+  categoryIds: rawCategoryIds,
   source,
 }: {
   query: string;
-  categoryId?: string | "uncategorized";
+  categoryIds?: string[];
   source?: ReelSource;
 }): Promise<{ items: ReelWithRelations[]; limited?: boolean }> {
   const q = query.trim();
+  const categoryIds = normalizeCategoryIds(rawCategoryIds);
   // 아주 긴 검색어는 벡터로 바꾸지 않는다(사용량을 쓰기 전에 막는다)
   if (!q || isQuestionTooLong(q)) return { items: [] };
   if (DEMO_MODE) {
     // 데모: 방문자 누구나 쓰되 하루 상한(데모 전용 DB)을 넘으면 Gemini를 부르지 않는다
     if (!(await consumeDemoQuota("search"))) return { items: [], limited: true };
-    const ids = await demoSemanticIds(q, { categoryId, source }, 20);
-    const keywordIds = getMockReels({ search: q, categoryId, source, take: 1000 }).items.map((r) => r.id);
+    const ids = await demoSemanticIds(q, { categoryIds, source }, 20);
+    const keywordIds = getMockReels({ search: q, categoryIds, source, take: 1000 }).items.map((r) => r.id);
     const items = similarExtras(keywordIds, ids).flatMap((id) => {
       const r = getMockReel(id);
       return r ? [r] : [];
@@ -288,9 +292,9 @@ export async function getSimilarReels({
   // 운영에서는 관리자 게시물만 벡터가 있다. 다른 가입자는 검색어를 Gemini로 보내지 않고 키워드 검색만 쓴다.
   if (!(await isAdmin())) return { items: [] };
   const [semantic, keywordIds] = await Promise.all([
-    semanticReels(userId, q, { categoryId, source }, undefined, { fast: true }),
+    semanticReels(userId, q, { categoryIds, source }, undefined, { fast: true }),
     prisma.reel
-      .findMany({ where: buildKeywordWhere({ userId, search: q, categoryId, source }), select: { id: true } })
+      .findMany({ where: buildKeywordWhere({ userId, search: q, categoryIds, source }), select: { id: true } })
       .then((rows) => rows.map((r) => r.id)),
   ]);
   const extra = new Set(similarExtras(keywordIds, semantic.map((r) => r.id)));

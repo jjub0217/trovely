@@ -3,11 +3,13 @@ import { prisma } from "@/lib/db";
 import { embedTexts, EMBEDDING_DIM } from "@/lib/ai/gemini";
 import { toVectorLiteral } from "./embedding-text";
 import { orderByIds } from "./rank";
+import { UNCATEGORIZED } from "./category-selection";
 
 export const SEMANTIC_TAKE = 20;
 
 export type SemanticFilter = {
-  categoryId?: string | "uncategorized";
+  /** 빈 목록 = 전체, ["uncategorized"] = 미분류, 그 밖에는 모두 가진 게시물(AND) */
+  categoryIds?: string[];
   source?: ReelSource;
   visited?: boolean;
 };
@@ -26,12 +28,16 @@ export async function semanticReelIds(
 
   const conds: Prisma.Sql[] = [Prisma.sql`r."userId" = ${userId}`];
   if (filter.source) conds.push(Prisma.sql`r."source" = ${filter.source}::"ReelSource"`);
-  if (filter.categoryId === "uncategorized") {
+  const categoryIds = filter.categoryIds ?? [];
+  if (categoryIds.includes(UNCATEGORIZED)) {
     conds.push(Prisma.sql`NOT EXISTS (SELECT 1 FROM "ReelCategory" rc WHERE rc."reelId" = r."id")`);
-  } else if (filter.categoryId) {
-    conds.push(
-      Prisma.sql`EXISTS (SELECT 1 FROM "ReelCategory" rc WHERE rc."reelId" = r."id" AND rc."categoryId" = ${filter.categoryId})`,
-    );
+  } else {
+    // 고른 카테고리마다 "붙어 있음" 조건 하나(모두 만족). 조건으로 먼저 거른 뒤 그 안에서 가까운 순으로 고른다
+    for (const categoryId of categoryIds) {
+      conds.push(
+        Prisma.sql`EXISTS (SELECT 1 FROM "ReelCategory" rc WHERE rc."reelId" = r."id" AND rc."categoryId" = ${categoryId})`,
+      );
+    }
   }
   if (filter.visited !== undefined) conds.push(Prisma.sql`r."visited" = ${filter.visited}`);
 
