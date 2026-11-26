@@ -1,4 +1,5 @@
 import type { Prisma, ReelSource } from "@prisma/client";
+import { UNCATEGORIZED } from "./category-selection";
 
 /**
  * 낱말 검색 조건(홈 화면과 측정 스크립트가 함께 쓴다).
@@ -7,13 +8,14 @@ import type { Prisma, ReelSource } from "@prisma/client";
 export function buildKeywordWhere({
   userId,
   search,
-  categoryId,
+  categoryIds = [],
   source,
   status,
 }: {
   userId: string;
   search?: string;
-  categoryId?: string | "uncategorized";
+  /** 빈 목록 = 전체, ["uncategorized"] = 미분류, 그 밖에는 모두 가진 게시물(AND) */
+  categoryIds?: string[];
   source?: ReelSource;
   status?: string;
 }): Prisma.ReelWhereInput {
@@ -21,10 +23,12 @@ export function buildKeywordWhere({
 
   if (source) where.source = source;
 
-  if (categoryId === "uncategorized") {
+  // 카테고리 조건과 검색어 조건을 한 AND 목록에 모은다(따로 넣으면 한쪽이 다른 쪽을 덮어쓴다)
+  const and: Prisma.ReelWhereInput[] = [];
+  if (categoryIds.includes(UNCATEGORIZED)) {
     where.categories = { none: {} };
-  } else if (categoryId) {
-    where.categories = { some: { categoryId } };
+  } else {
+    for (const categoryId of categoryIds) and.push({ categories: { some: { categoryId } } });
   }
 
   if (status === "visited") {
@@ -36,8 +40,8 @@ export function buildKeywordWhere({
   }
 
   const keywords = (search ?? "").trim().split(/\s+/).filter(Boolean);
-  if (keywords.length > 0) {
-    where.AND = keywords.map((keyword) => ({
+  for (const keyword of keywords) {
+    and.push({
       OR: [
         { memo: { contains: keyword, mode: "insensitive" as const } },
         { review: { contains: keyword, mode: "insensitive" as const } },
@@ -45,7 +49,8 @@ export function buildKeywordWhere({
         { tags: { some: { tag: { name: { contains: keyword, mode: "insensitive" as const } } } } },
         { categories: { some: { category: { name: { contains: keyword, mode: "insensitive" as const } } } } },
       ],
-    }));
+    });
   }
+  if (and.length > 0) where.AND = and;
   return where;
 }

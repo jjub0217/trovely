@@ -1,4 +1,5 @@
 import type { ReelSource } from "@prisma/client";
+import { matchesCategories } from "./category-selection";
 import { embedTexts } from "@/lib/ai/gemini";
 import { getAllMockReels } from "@/lib/mocks/portal";
 import demoEmbeddings from "@/lib/mocks/demo-embeddings.json";
@@ -14,7 +15,7 @@ export function rankByVector(query: number[], items: { id: string; vector: numbe
     .map((x) => x.id);
 }
 
-export type DemoFilter = { categoryId?: string | "uncategorized"; source?: ReelSource; visited?: boolean };
+export type DemoFilter = { categoryIds?: string[]; source?: ReelSource; visited?: boolean };
 
 const vectors = demoEmbeddings as Record<string, { hash: string; vector: number[] }>;
 
@@ -23,11 +24,7 @@ export async function demoSemanticIds(query: string, filter: DemoFilter, take: n
   const [q] = await embedTexts([query], "RETRIEVAL_QUERY", { retries: 0, timeoutMs: 3000 });
   const items = getAllMockReels()
     .filter((r) => !filter.source || r.source === filter.source)
-    .filter((r) =>
-      filter.categoryId === "uncategorized"
-        ? r.categories.length === 0
-        : !filter.categoryId || r.categories.some((c) => c.category.id === filter.categoryId),
-    )
+    .filter((r) => matchesCategories(r.categories.map((c) => c.category.id), filter.categoryIds ?? []))
     .filter((r) => filter.visited === undefined || r.visited === filter.visited)
     .filter((r) => vectors[r.id])
     .map((r) => ({ id: r.id, vector: vectors[r.id].vector }));

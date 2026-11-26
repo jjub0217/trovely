@@ -29,12 +29,12 @@ async function main() {
     const cat = await prisma.category.findFirstOrThrow({ where: { userId, name: q.category } });
     // 낱말 검색: 홈 화면과 같은 조건, 같은 정렬(최신 저장 순)
     const kw = await prisma.reel.findMany({
-      where: buildKeywordWhere({ userId, search: q.query, categoryId: cat.id }),
+      where: buildKeywordWhere({ userId, search: q.query, categoryIds: [cat.id] }),
       orderBy: { createdAt: "desc" },
       take: SEMANTIC_TAKE,
       select: { id: true },
     });
-    const sm = await semanticReelIds(userId, q.query, { categoryId: cat.id });
+    const sm = await semanticReelIds(userId, q.query, { categoryIds: [cat.id] });
     const urlById = new Map(
       (await prisma.reel.findMany({ where: { id: { in: [...kw.map((k) => k.id), ...sm] } }, select: { id: true, url: true } })).map((r) => [r.id, r.url]),
     );

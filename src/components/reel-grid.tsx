@@ -14,7 +14,7 @@ export function ReelGrid({
   initialReels,
   initialCursor,
   search,
-  categoryId,
+  categoryIds = [],
   source,
   status,
   sort,
@@ -28,7 +28,8 @@ export function ReelGrid({
   similarLimited?: boolean;
   initialCursor: string | null;
   search?: string;
-  categoryId?: string;
+  /** 고른 카테고리(빈 목록 = 전체, ["uncategorized"] = 미분류, 그 밖에는 모두 가진 게시물) */
+  categoryIds?: string[];
   source?: "instagram" | "youtube";
   status?: string;
   sort?: string;
@@ -53,14 +54,16 @@ export function ReelGrid({
     setSimilarOpen(false);
   }
 
+  // 목록은 렌더마다 새로 만들어지므로, 의존성에는 글자로 이은 값을 쓴다
+  const categoryKey = categoryIds.join(",");
   const loadMore = useCallback(async () => {
     if (!cursor || loading) return;
     setLoading(true);
-    const result = await getReels({ search, categoryId, source, status, sort, cursor });
+    const result = await getReels({ search, categoryIds: categoryKey ? categoryKey.split(",") : [], source, status, sort, cursor });
     setReels((prev) => [...prev, ...result.items]);
     setCursor(result.nextCursor);
     setLoading(false);
-  }, [cursor, loading, search, categoryId, source, status, sort]);
+  }, [cursor, loading, search, categoryKey, source, status, sort]);
 
   useEffect(() => {
     const query = searchParams.toString();
@@ -197,7 +200,7 @@ export function ReelGrid({
   );
 
   if (reels.length === 0) {
-    const hasFilters = Boolean(search || categoryId || status);
+    const hasFilters = Boolean(search || categoryIds.length > 0 || status);
     return (
       <>
         <div className="px-6 py-12 text-center text-gray-500 text-sm">
