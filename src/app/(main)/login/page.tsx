@@ -89,6 +89,9 @@ export default function LoginPage() {
         <GoogleOAuthButton />
         <KakaoOAuthButton />
       </div>
+      <Link href="/privacy" className="text-center text-xs text-gray-500 underline underline-offset-2 mt-4">
+        개인정보 처리방침
+      </Link>
       <p className="text-center text-sm text-gray-400 mt-4">
         <Link href="/forgot-password" className="text-gray-400 hover:underline">
           비밀번호를 잊으셨나요?

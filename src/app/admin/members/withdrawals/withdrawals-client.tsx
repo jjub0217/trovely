@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { WithdrawalDetailModal } from "../users/withdrawal-detail-modal";
 
 interface WithdrawalRow {
   id: string;
-  email: string;
   reason: string;
-  detail: string | null;
   createdAt: string;
 }
 
@@ -28,7 +25,6 @@ export function WithdrawalsClient({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   function goToPage(p: number) {
     startTransition(() => {
@@ -44,16 +40,14 @@ export function WithdrawalsClient({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-700">
-              <th className="text-left px-4 py-3 text-gray-400 font-medium">이메일</th>
               <th className="text-left px-4 py-3 text-gray-400 font-medium">탈퇴 사유</th>
-              <th className="text-left px-4 py-3 text-gray-400 font-medium">탈퇴 상세 사유</th>
               <th className="text-left px-4 py-3 text-gray-400 font-medium w-32">탈퇴일</th>
             </tr>
           </thead>
           <tbody className={isPending ? "opacity-50" : ""}>
             {withdrawals.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={2} className="px-4 py-8 text-center text-gray-500">
                   탈퇴한 회원이 없습니다
                 </td>
               </tr>
@@ -61,12 +55,9 @@ export function WithdrawalsClient({
               withdrawals.map((w) => (
                 <tr
                   key={w.id}
-                  onClick={() => setSelectedId(w.id)}
-                  className="border-b border-gray-700/50 hover:bg-gray-700/30 cursor-pointer transition-colors"
+                  className="border-b border-gray-700/50"
                 >
-                  <td className="px-4 py-3 text-gray-100">{w.email}</td>
                   <td className="px-4 py-3 text-gray-300">{w.reason}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{w.detail || "-"}</td>
                   <td className="px-4 py-3 text-gray-400">
                     {new Date(w.createdAt).toLocaleDateString("ko-KR")}
                   </td>
@@ -127,12 +118,6 @@ export function WithdrawalsClient({
         </div>
       </div>
 
-      {selectedId && (
-        <WithdrawalDetailModal
-          withdrawalId={selectedId}
-          onClose={() => setSelectedId(null)}
-        />
-      )}
     </>
   );
 }

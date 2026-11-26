@@ -151,6 +151,13 @@ export default function SignupPage() {
         <GoogleOAuthButton />
         <KakaoOAuthButton />
       </div>
+      <p className="text-center text-xs text-gray-500 mt-4">
+        만 14세 이상만 가입할 수 있어요. 가입하면{" "}
+        <Link href="/privacy" className="underline underline-offset-2">
+          개인정보 처리방침
+        </Link>
+        에 따라 정보가 처리돼요.
+      </p>
       <p className="text-center text-sm text-gray-400 mt-6">
         이미 계정이 있으신가요?{" "}
         <Link href="/login" className="text-purple-400 hover:underline">
