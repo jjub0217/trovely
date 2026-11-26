@@ -9,8 +9,8 @@ export const PRIVACY_INFO = {
   // 후보: trovely.contact@gmail.com (사용자가 계정을 만든 뒤 확정. 확정 전에는 공개하지 않는다)
   contactEmail: `${PENDING} Trovely 문의 메일`,
   effectiveDate: `${PENDING} 배포일`,
-  // Supabase 무료 요금제의 백업 제공 여부를 대시보드(Database → Backups)에서 확인한 뒤 적는다
-  backupRetention: `${PENDING} 운영 데이터베이스의 백업 보관 여부와 기간`,
+  // 2026-11-26 확인: 운영 Supabase는 무료 요금제라 예약 백업이 없다(Database → Backups "Free Plan does not include project backups")
+  backupRetention: "운영 데이터베이스의 별도 백업은 보관하지 않습니다. 그래서 삭제한 정보는 백업에도 남지 않습니다.",
   processors: [
     {
       name: "Supabase, Inc.",
