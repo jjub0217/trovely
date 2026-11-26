@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "./db";
+import { deleteAccountData } from "./account-deletion";
 import { extractThumbnail } from "./og";
 import type { ReelWithRelations } from "@/types";
 import { refreshEmbeddingsAfterResponse } from "./search/embedding-refresh";
@@ -502,27 +503,19 @@ export async function getUserEmail() {
   return user?.email || "";
 }
 
-export async function deleteAccount({ reason, detail }: { reason: string; detail?: string }) {
-  if (DEMO_MODE) return { success: true };
+export async function deleteAccount({ reason }: { reason: string }) {
+  if (DEMO_MODE) return { success: true as const };
   const userId = await requireAuth();
 
+  const result = await deleteAccountData(userId, reason);
+  if ("error" in result) return result;
+
+  // 이 브라우저의 로그인 쿠키를 지운다. 계정은 이미 지워졌으므로 서버 쪽 로그아웃 요청이 실패해도 괜찮다.
   const { createClient } = await import("@/lib/supabase/server");
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const email = user?.email || "";
+  await supabase.auth.signOut({ scope: "local" }).catch(() => {});
 
-  await prisma.$transaction([
-    prisma.reelCategory.deleteMany({ where: { reel: { userId } } }),
-    prisma.reelTag.deleteMany({ where: { reel: { userId } } }),
-    prisma.reel.deleteMany({ where: { userId } }),
-    prisma.category.deleteMany({ where: { userId } }),
-    prisma.tag.deleteMany({ where: { userId } }),
-    prisma.withdrawal.create({ data: { email, reason, detail: detail || null } }),
-  ]);
-
-  await supabase.auth.signOut();
-
-  return { success: true };
+  return { success: true as const };
 }
 
 export async function signOut() {

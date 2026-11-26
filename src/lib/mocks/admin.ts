@@ -34,19 +34,16 @@ const USERS: AdminUser[] = [
   { id: "u-08", email: "minseok@example.com", createdAt: "2026-05-14T19:00:00Z", status: "active", reelCount: 42, categoryCount: 7, tagCount: 16, isAdmin: false },
   { id: "u-09", email: "subin.han@example.com", createdAt: "2026-05-22T07:25:00Z", status: "active", reelCount: 6, categoryCount: 2, tagCount: 4, isAdmin: false },
   { id: "u-10", email: "jiwoo@example.com", createdAt: "2026-06-05T12:45:00Z", status: "active", reelCount: 19, categoryCount: 4, tagCount: 9, isAdmin: false },
-  // 탈퇴 회원(목록엔 withdrawn으로 표시)
-  { id: "u-11", email: "former.user1@example.com", createdAt: "2026-03-28T09:00:00Z", status: "withdrawn", reelCount: 0, categoryCount: 0, tagCount: 0, isAdmin: false },
-  { id: "u-12", email: "former.user2@example.com", createdAt: "2026-04-18T09:00:00Z", status: "withdrawn", reelCount: 0, categoryCount: 0, tagCount: 0, isAdmin: false },
 ];
 
-type WithdrawalRow = { id: string; email: string; reason: string; detail: string | null; createdAt: string };
+type WithdrawalRow = { id: string; reason: string; createdAt: string };
 
 // 탈퇴 로그(원본: reason은 영문 코드)
 const WITHDRAWALS: WithdrawalRow[] = [
-  { id: "w-01", email: "former.user1@example.com", reason: "SERVICE_DISSATISFACTION", detail: "원하는 카테고리 정리 기능이 부족했어요.", createdAt: "2026-06-10T10:00:00Z" },
-  { id: "w-02", email: "former.user2@example.com", reason: "LOW_USAGE", detail: null, createdAt: "2026-06-02T15:30:00Z" },
-  { id: "w-03", email: "leaver3@example.com", reason: "PRIVACY_CONCERN", detail: "개인정보 처리 방침이 궁금했습니다.", createdAt: "2026-05-20T08:15:00Z" },
-  { id: "w-04", email: "leaver4@example.com", reason: "OTHER", detail: "잠시 쉬어가려고요.", createdAt: "2026-05-08T21:40:00Z" },
+  { id: "w-01", reason: "SERVICE_DISSATISFACTION", createdAt: "2026-06-10T10:00:00Z" },
+  { id: "w-02", reason: "LOW_USAGE", createdAt: "2026-06-02T15:30:00Z" },
+  { id: "w-03", reason: "PRIVACY_CONCERN", createdAt: "2026-05-20T08:15:00Z" },
+  { id: "w-04", reason: "OTHER", createdAt: "2026-05-08T21:40:00Z" },
 ];
 
 // 오늘 기준 최근 30일 트렌드 배열 생성(결정적: 날짜+seed로 count 산출)
@@ -111,9 +108,7 @@ export function getMockWithdrawalStats({ page = 1, pageSize = 10 }: { page?: num
     totalPages: Math.ceil(total / pageSize),
     withdrawals: paged.map((w) => ({
       id: w.id,
-      email: w.email,
       reason: REASON_MAP[w.reason] ?? w.reason,
-      detail: w.detail,
       createdAt: w.createdAt,
     })),
     reasonStats,
@@ -146,18 +141,6 @@ export function getMockAdminUsers({
     page,
     pageSize,
     totalPages: Math.ceil(total / pageSize),
-  };
-}
-
-export function getMockWithdrawalDetail(withdrawalId: string) {
-  const w = WITHDRAWALS.find((x) => x.id === withdrawalId) ?? WITHDRAWALS[0];
-  if (!w) return null;
-  return {
-    id: w.id,
-    email: w.email,
-    reason: REASON_MAP[w.reason] ?? w.reason,
-    detail: w.detail,
-    createdAt: w.createdAt,
   };
 }
 

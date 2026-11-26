@@ -66,11 +66,10 @@ model AdminRole {
   createdAt DateTime @default(now())
 }
 
+// 탈퇴 통계용: 개인을 알아볼 수 있는 정보(이메일, 사용자 ID, 직접 쓴 사유)는 남기지 않는다
 model Withdrawal {
   id        String   @id @default(cuid())
-  email     String
   reason    String
-  detail    String?
   createdAt DateTime @default(now())
 }
 

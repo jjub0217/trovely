@@ -4,7 +4,6 @@ import { useState, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { UserDetailModal } from "./user-detail-modal";
-import { WithdrawalDetailModal } from "./withdrawal-detail-modal";
 
 interface UserRow {
   id: string;
@@ -85,7 +84,6 @@ export function UsersClient({
   const [isPending, startTransition] = useTransition();
   const [searchInput, setSearchInput] = useState(search);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedWithdrawalId, setSelectedWithdrawalId] = useState<string | null>(null);
 
   function buildUrl(overrides: { search?: string; status?: string; page?: number }) {
     const params = new URLSearchParams();
@@ -153,7 +151,6 @@ export function UsersClient({
         {[
           { value: "", label: "전체" },
           { value: "active", label: "활성" },
-          { value: "withdrawn", label: "탈퇴" },
         ].map((opt) => (
           <button
             key={opt.value}
@@ -201,10 +198,7 @@ export function UsersClient({
               {data.users.map((user) => (
                 <tr
                   key={user.id}
-                  onClick={() => {
-                    if (user.status === "active") setSelectedUserId(user.id);
-                    else setSelectedWithdrawalId(user.id);
-                  }}
+                  onClick={() => setSelectedUserId(user.id)}
                   className="border-b border-gray-700/50 hover:bg-gray-700/30 cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-3 text-gray-100">{user.email}</td>
@@ -311,12 +305,6 @@ export function UsersClient({
         <UserDetailModal
           userId={selectedUserId}
           onClose={() => setSelectedUserId(null)}
-        />
-      )}
-      {selectedWithdrawalId && (
-        <WithdrawalDetailModal
-          withdrawalId={selectedWithdrawalId}
-          onClose={() => setSelectedWithdrawalId(null)}
         />
       )}
     </div>
