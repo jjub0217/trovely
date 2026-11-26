@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { PRIVACY_INFO } from "@/lib/privacy-info";
 
-export const metadata: Metadata = { title: "개인정보 처리방침 | Trovely" };
+export const metadata: Metadata = { title: "개인정보 처리방침" };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
