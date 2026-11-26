@@ -59,7 +59,7 @@ export default function PrivacyPage() {
         <p className="font-medium text-gray-200">서비스를 이용하며 저장되는 정보</p>
         <List
           items={[
-            "저장한 콘텐츠의 주소와 썸네일 주소",
+            "저장한 콘텐츠의 주소, 썸네일 주소, 게시물 설명 글(캡션)",
             "직접 입력한 카테고리, 태그, 메모, 후기, 방문 완료 여부",
           ]}
         />
@@ -76,7 +76,7 @@ export default function PrivacyPage() {
         <List
           items={[
             "계정 정보와 저장한 콘텐츠는 회원탈퇴 때까지 보관합니다.",
-            "회원탈퇴를 하면 로그인 계정과 저장한 콘텐츠, 카테고리, 태그, 메모, 후기를 바로 삭제합니다. 삭제한 정보는 복구할 수 없습니다.",
+            "회원탈퇴를 하면 로그인 계정과 저장한 콘텐츠, 캡션, 카테고리, 태그, 메모, 후기를 바로 삭제합니다. 삭제한 정보는 복구할 수 없습니다.",
             "탈퇴할 때 고른 탈퇴 사유는 서비스 개선 통계를 위해 탈퇴 날짜와 함께 남깁니다. 이 기록에는 이메일, 계정 식별값 등 누가 탈퇴했는지 알 수 있는 정보가 없습니다.",
             `데이터베이스 백업: ${info.backupRetention}`,
             "서비스 운영 기록은 각 위탁 업체가 정한 기간 동안 보관된 뒤 삭제됩니다.",
@@ -113,7 +113,7 @@ export default function PrivacyPage() {
         </div>
         <p>{info.overseasTransfer}</p>
         <p>
-          콘텐츠 썸네일을 가져오기 위해 저장한 게시물 주소를 Iframely, Microlink에 보냅니다. 이때 이메일 등 계정 정보는 함께 보내지 않습니다.
+          콘텐츠 썸네일과 설명 글을 가져오기 위해 저장한 게시물 주소를 Iframely, Microlink, YouTube, Instagram에 보냅니다. 이때 이메일 등 계정 정보는 함께 보내지 않습니다.
         </p>
       </Section>
 
