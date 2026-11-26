@@ -74,3 +74,28 @@ export async function fetchKakaoUser(accessToken: string): Promise<KakaoUser> {
   }
   return response.json();
 }
+
+const KAKAO_UNLINK_URL = "https://kapi.kakao.com/v1/user/unlink";
+
+/**
+ * 회원탈퇴 때 카카오와 Trovely의 연결을 끊는다(카카오 계정의 "연결된 서비스"에서 Trovely가 빠진다).
+ * 사용자 토큰을 저장하지 않으므로 앱 어드민 키와 카카오 회원번호로 끊는다.
+ * 어드민 키가 없으면 하지 않고 false를 돌려준다.
+ */
+export async function unlinkKakaoUser(kakaoId: number | string): Promise<boolean> {
+  const adminKey = process.env.KAKAO_ADMIN_KEY;
+  if (!adminKey) return false;
+  const response = await fetch(KAKAO_UNLINK_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `KakaoAK ${adminKey}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ target_id_type: "user_id", target_id: String(kakaoId) }),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Kakao unlink failed: ${response.status} ${text}`);
+  }
+  return true;
+}

@@ -29,10 +29,15 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // 쿠키만 읽는 getSession() 대신 Supabase 서버에 확인하는 getUser()를 쓴다.
+  // 탈퇴로 계정이 지워졌는데 다른 기기에 예전 쿠키가 남아 있으면, getSession()은 로그인으로 보고
+  // 페이지의 requireAuth()는 로그인 화면으로 보내서 / ↔ /login 무한 이동이 생겼다(2026-11-26 확인).
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // 개인정보 처리방침은 로그인 여부와 상관없이 누구나 본다
+  if (request.nextUrl.pathname.startsWith("/privacy")) return supabaseResponse;
 
   const isAuthPage =
     request.nextUrl.pathname.startsWith("/login") ||

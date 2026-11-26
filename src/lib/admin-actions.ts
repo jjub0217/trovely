@@ -13,7 +13,6 @@ import {
   getMockWithdrawalStats,
   getMockWithdrawalTrend,
   getMockAdminUsers,
-  getMockWithdrawalDetail,
   getMockUserDetail,
 } from "./mocks/admin";
 
@@ -92,7 +91,8 @@ export async function getMemberStats() {
     ]);
 
     return {
-      totalUsers: totalResult.rows[0].count - withdrawalCount,
+      // 탈퇴하면 로그인 계정이 지워지므로 auth.users 수가 곧 활성 계정 수다
+      totalUsers: totalResult.rows[0].count,
       todaySignups: todayResult.rows[0].count,
       weekSignups: weekResult.rows[0].count,
       totalWithdrawals: withdrawalCount,
@@ -208,9 +208,7 @@ export async function getWithdrawalStats({
     totalPages: Math.ceil(totalCount / pageSize),
     withdrawals: withdrawals.map((w) => ({
       id: w.id,
-      email: w.email,
       reason: reasonMap[w.reason] || w.reason,
-      detail: w.detail,
       createdAt: w.createdAt.toISOString(),
     })),
     reasonStats,
@@ -272,41 +270,16 @@ export async function getAdminUsers({
 
   const pool = getPool();
   try {
-    // 활성 회원 + 탈퇴 로그 조회
-    const [activeResult, withdrawals] = await Promise.all([
-      pool.query("SELECT id, email, created_at FROM auth.users ORDER BY created_at DESC"),
-      prisma.withdrawal.findMany({ orderBy: { createdAt: "desc" } }),
-    ]);
-
-    const withdrawnEmails = new Set(withdrawals.map((w) => w.email));
-
-    // auth.users에서 탈퇴 여부 판별
-    const activeUsers = activeResult.rows.map((u: { id: string; email: string; created_at: string }) => ({
+    // 탈퇴하면 로그인 계정이 지워지므로 auth.users에는 활성 회원만 있다.
+    // 탈퇴 기록에는 누가 탈퇴했는지 알 수 있는 정보가 없어서 회원 목록에 넣지 않는다(탈퇴 통계는 탈퇴 화면에서 본다).
+    const activeResult = await pool.query("SELECT id, email, created_at FROM auth.users ORDER BY created_at DESC");
+    let allUsers = activeResult.rows.map((u: { id: string; email: string; created_at: string }) => ({
       id: u.id,
       email: u.email,
       createdAt: u.created_at,
-      status: (withdrawnEmails.has(u.email) ? "withdrawn" : "active") as "active" | "withdrawn",
+      status: "active" as const,
     }));
-
-    // auth.users에 없는 탈퇴 회원 추가
-    const authEmails = new Set(activeResult.rows.map((u: { email: string }) => u.email));
-    const withdrawnOnly = withdrawals
-      .filter((w) => !authEmails.has(w.email))
-      .map((w) => ({
-        id: w.id,
-        email: w.email,
-        createdAt: w.createdAt.toISOString(),
-        status: "withdrawn" as const,
-      }));
-
-    let allUsers = [...activeUsers, ...withdrawnOnly];
-
-    // 상태 필터
-    if (status === "active") {
-      allUsers = allUsers.filter((u) => u.status === "active");
-    } else if (status === "withdrawn") {
-      allUsers = allUsers.filter((u) => u.status === "withdrawn");
-    }
+    if (status === "withdrawn") allUsers = [];
 
     // 검색 필터
     if (search) {
@@ -352,30 +325,6 @@ export async function getAdminUsers({
   } finally {
     await pool.end();
   }
-}
-
-export async function getWithdrawalDetail(withdrawalId: string) {
-  if (DEMO_MODE) return getMockWithdrawalDetail(withdrawalId);
-  await requireAdmin();
-
-  const reasonMap: Record<string, string> = {
-    SERVICE_DISSATISFACTION: "서비스 불만족",
-    PRIVACY_CONCERN: "개인정보 우려",
-    LOW_USAGE: "사용 빈도 낮음",
-    COMPETITOR: "다른 서비스 이용",
-    OTHER: "기타",
-  };
-
-  const w = await prisma.withdrawal.findUnique({ where: { id: withdrawalId } });
-  if (!w) return null;
-
-  return {
-    id: w.id,
-    email: w.email,
-    reason: reasonMap[w.reason] || w.reason,
-    detail: w.detail,
-    createdAt: w.createdAt.toISOString(),
-  };
 }
 
 export async function getUserDetail(userId: string) {

@@ -23,7 +23,7 @@ export function Sidebar({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [withdrawalReason, setWithdrawalReason] = useState("");
-  const [withdrawalDetail, setWithdrawalDetail] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -45,12 +45,21 @@ export function Sidebar({
   async function handleDeleteAccount() {
     if (!withdrawalReason) return;
     setDeleting(true);
-    await deleteAccount({
-      reason: withdrawalReason,
-      detail: withdrawalReason === "OTHER" ? withdrawalDetail : undefined,
-    });
-    router.push("/login");
-    router.refresh();
+    setDeleteError("");
+    try {
+      const result = await deleteAccount({ reason: withdrawalReason });
+      if ("error" in result) {
+        // 탈퇴가 끝나지 않았으면 로그인 화면으로 보내지 않고 이유를 보여 준다
+        setDeleteError(result.error);
+        return;
+      }
+      router.push("/login");
+      router.refresh();
+    } catch {
+      setDeleteError("탈퇴를 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -155,7 +164,7 @@ export function Sidebar({
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] px-6">
           <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-xs">
             <h3 className="text-base font-semibold mb-2">회원탈퇴</h3>
-            <p className="text-xs text-gray-500 mb-4">저장된 모든 콘텐츠, 카테고리, 태그가 삭제되며 복구할 수 없습니다.</p>
+            <p className="text-xs text-gray-500 mb-4">계정과 저장된 모든 콘텐츠, 카테고리, 태그가 바로 삭제되며 복구할 수 없습니다. 탈퇴 사유는 누가 탈퇴했는지 알 수 없는 통계로만 남습니다.</p>
             <p className="text-sm text-gray-400 mb-2">탈퇴 사유를 선택해주세요</p>
             <div className="flex flex-col gap-2 mb-4">
               {[
@@ -185,21 +194,13 @@ export function Sidebar({
                 </label>
               ))}
             </div>
-            {withdrawalReason === "OTHER" && (
-              <textarea
-                value={withdrawalDetail}
-                onChange={(e) => setWithdrawalDetail(e.target.value)}
-                placeholder="탈퇴 사유를 입력해주세요..."
-                rows={2}
-                className="w-full bg-gray-700 border border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-500 resize-none mb-4"
-              />
-            )}
+            {deleteError && <p className="text-xs text-red-400 mb-3">{deleteError}</p>}
             <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowDeleteModal(false);
                   setWithdrawalReason("");
-                  setWithdrawalDetail("");
+                  setDeleteError("");
                 }}
                 className="flex-1 bg-gray-700 py-2.5 rounded-xl text-sm cursor-pointer"
               >
