@@ -3,9 +3,17 @@
 import { prisma } from "./db";
 import { deleteAccountData } from "./account-deletion";
 import { extractThumbnail } from "./og";
+import type { ReelWithRelations } from "@/types";
+import { refreshEmbeddingsAfterResponse } from "./search/embedding-refresh";
+import { semanticReels } from "./search/semantic";
+import { buildKeywordWhere } from "./search/keyword-where";
+import { similarExtras } from "./search/merge";
+import { isQuestionTooLong } from "./search/ask";
+import { demoSemanticIds } from "./search/demo-search";
+import { consumeDemoQuota } from "./demo/usage";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { requireAuth } from "./auth";
+import { isAdmin, requireAuth } from "./auth";
 import { normalizeReelUrl, type ReelSource } from "./reel-url";
 import { normalizeTagName, normalizeTagNames } from "./tag-name";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
@@ -33,6 +41,7 @@ async function resolveThumbnail(
 export async function createReel(formData: {
   url: string;
   thumbnail?: string | null;
+  caption?: string | null;
   memo?: string;
   review?: string;
   categoryIds: string[];
@@ -76,6 +85,7 @@ export async function createReel(formData: {
     data: {
       url: normalizedUrl,
       thumbnail,
+      caption: formData.caption?.trim() || null,
       source,
       memo: memo || null,
       review: review || null,
@@ -90,6 +100,7 @@ export async function createReel(formData: {
     },
   });
 
+  refreshEmbeddingsAfterResponse([reel.id]);
   revalidatePath("/");
   return { success: true, id: reel.id };
 }
@@ -168,6 +179,7 @@ export async function updateReel(
 
   revalidatePath("/");
   revalidatePath(`/reels/${id}`);
+  refreshEmbeddingsAfterResponse([id]);
   return { success: true };
 }
 
@@ -216,37 +228,7 @@ export async function getReels({
 }) {
   if (DEMO_MODE) return getMockReels({ search, categoryId, source, status, sort, cursor, take });
   const userId = await requireAuth();
-  const where: Prisma.ReelWhereInput = { userId };
-
-  if (source) {
-    where.source = source;
-  }
-
-  if (categoryId === "uncategorized") {
-    where.categories = { none: {} };
-  } else if (categoryId) {
-    where.categories = { some: { categoryId } };
-  }
-
-  if (status === "visited") {
-    where.visited = true;
-  } else if (status === "unvisited") {
-    where.visited = false;
-  } else if (status === "reviewed") {
-    where.review = { not: null };
-  }
-
-  if (search) {
-    const keywords = search.trim().split(/\s+/).filter(Boolean);
-    where.AND = keywords.map((keyword) => ({
-      OR: [
-        { memo: { contains: keyword, mode: "insensitive" as const } },
-        { review: { contains: keyword, mode: "insensitive" as const } },
-        { tags: { some: { tag: { name: { contains: keyword, mode: "insensitive" as const } } } } },
-        { categories: { some: { category: { name: { contains: keyword, mode: "insensitive" as const } } } } },
-      ],
-    }));
-  }
+  const where = buildKeywordWhere({ userId, search, categoryId, source, status });
 
   const orderBy: Prisma.ReelOrderByWithRelationInput[] =
     sort === "oldest"
@@ -273,6 +255,46 @@ export async function getReels({
   const nextCursor = hasMore ? items[items.length - 1].id : null;
 
   return { items, nextCursor };
+}
+
+/**
+ * 낱말 결과 아래에 붙일 "뜻이 비슷한 릴스": 고른 카테고리, 출처 안에서 뜻이 가까운 순 상위 20개 중
+ * 낱말 검색에 이미 걸린 릴스를 뺀 것(2026-11-25 측정 뒤 사용자 결정: 낱말 먼저, 뜻 결과는 그 아래).
+ */
+export async function getSimilarReels({
+  query,
+  categoryId,
+  source,
+}: {
+  query: string;
+  categoryId?: string | "uncategorized";
+  source?: ReelSource;
+}): Promise<{ items: ReelWithRelations[]; limited?: boolean }> {
+  const q = query.trim();
+  // 아주 긴 검색어는 벡터로 바꾸지 않는다(사용량을 쓰기 전에 막는다)
+  if (!q || isQuestionTooLong(q)) return { items: [] };
+  if (DEMO_MODE) {
+    // 데모: 방문자 누구나 쓰되 하루 상한(데모 전용 DB)을 넘으면 Gemini를 부르지 않는다
+    if (!(await consumeDemoQuota("search"))) return { items: [], limited: true };
+    const ids = await demoSemanticIds(q, { categoryId, source }, 20);
+    const keywordIds = getMockReels({ search: q, categoryId, source, take: 1000 }).items.map((r) => r.id);
+    const items = similarExtras(keywordIds, ids).flatMap((id) => {
+      const r = getMockReel(id);
+      return r ? [r] : [];
+    });
+    return { items: items as unknown as ReelWithRelations[] };
+  }
+  const userId = await requireAuth();
+  // 운영에서는 관리자 게시물만 벡터가 있다. 다른 가입자는 검색어를 Gemini로 보내지 않고 키워드 검색만 쓴다.
+  if (!(await isAdmin())) return { items: [] };
+  const [semantic, keywordIds] = await Promise.all([
+    semanticReels(userId, q, { categoryId, source }, undefined, { fast: true }),
+    prisma.reel
+      .findMany({ where: buildKeywordWhere({ userId, search: q, categoryId, source }), select: { id: true } })
+      .then((rows) => rows.map((r) => r.id)),
+  ]);
+  const extra = new Set(similarExtras(keywordIds, semantic.map((r) => r.id)));
+  return { items: semantic.filter((r) => extra.has(r.id)) };
 }
 
 export async function getReel(id: string) {
@@ -356,6 +378,14 @@ export async function createTag(name: string) {
   return { success: true, tag };
 }
 
+async function reelIdsWithCategory(categoryId: string): Promise<string[]> {
+  return (await prisma.reelCategory.findMany({ where: { categoryId }, select: { reelId: true } })).map((r) => r.reelId);
+}
+
+async function reelIdsWithTag(tagId: string): Promise<string[]> {
+  return (await prisma.reelTag.findMany({ where: { tagId }, select: { reelId: true } })).map((r) => r.reelId);
+}
+
 export async function updateCategory(id: string, name: string) {
   if (DEMO_MODE) return { error: "데모 모드에서는 변경할 수 없습니다" };
   const userId = await requireAuth();
@@ -371,6 +401,7 @@ export async function updateCategory(id: string, name: string) {
   if (existing) return { error: "이미 존재하는 카테고리입니다" };
 
   await prisma.category.update({ where: { id }, data: { name: trimmed } });
+  refreshEmbeddingsAfterResponse(await reelIdsWithCategory(id));
   revalidatePath("/");
   revalidatePath("/categories");
   return { success: true };
@@ -394,6 +425,7 @@ export async function updateTag(id: string, name: string) {
     where: { id },
     data: { name: normalized },
   });
+  refreshEmbeddingsAfterResponse(await reelIdsWithTag(id));
   revalidatePath("/");
   revalidatePath("/archive");
   revalidatePath(`/reels/${id}`);
@@ -407,7 +439,9 @@ export async function deleteCategory(id: string) {
   const category = await prisma.category.findFirst({ where: { id, userId } });
   if (!category) return { error: "카테고리를 찾을 수 없습니다" };
 
+  const affectedReels = await reelIdsWithCategory(id);
   await prisma.category.delete({ where: { id } });
+  refreshEmbeddingsAfterResponse(affectedReels);
   revalidatePath("/");
   revalidatePath("/categories");
   return { success: true };
@@ -419,7 +453,9 @@ export async function deleteTag(id: string) {
   const tag = await prisma.tag.findFirst({ where: { id, userId } });
   if (!tag) return { error: "태그를 찾을 수 없습니다" };
 
+  const affectedReels = await reelIdsWithTag(id);
   await prisma.tag.delete({ where: { id } });
+  refreshEmbeddingsAfterResponse(affectedReels);
   revalidatePath("/");
   revalidatePath("/archive");
   revalidatePath("/tags");
@@ -427,7 +463,8 @@ export async function deleteTag(id: string) {
 }
 
 export async function refreshThumbnail(
-  reelId: string
+  reelId: string,
+  options: { revalidate?: boolean } = {}
 ): Promise<{ thumbnail: string | null }> {
   if (DEMO_MODE) return { thumbnail: null };
   const userId = await requireAuth();
@@ -442,7 +479,8 @@ export async function refreshThumbnail(
     where: { id: reel.id },
     data: { thumbnail: fresh },
   });
-  revalidatePath("/");
+  // 비어 있던 썸네일을 채울 때는 카드마다 홈 화면을 다시 그리지 않는다(가져온 게시물 수천 개)
+  if (options.revalidate !== false) revalidatePath("/");
 
   return { thumbnail: fresh };
 }

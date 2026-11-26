@@ -41,7 +41,7 @@ export function ReelForm({
   const [manualThumbnail, setManualThumbnail] = useState<string | null>(null);
   const [manualThumbnailName, setManualThumbnailName] = useState("");
   // /api/og 조회 결과 (어느 url에 대한 것인지 함께 저장)
-  const [fetched, setFetched] = useState<{ url: string; thumbnail: string | null } | null>(null);
+  const [fetched, setFetched] = useState<{ url: string; thumbnail: string | null; caption: string | null } | null>(null);
 
   // 미리보기 상태는 입력에서 "파생" — effect에서 setState 하지 않음 (set-state-in-effect 회피)
   const normalizedUrlForPreview = normalizeReelUrl(url)?.url ?? null;
@@ -83,9 +83,9 @@ export function ReelForm({
       try {
         const res = await fetch(`/api/og?url=${encodeURIComponent(normalizedUrl)}`);
         const data = await res.json();
-        setFetched({ url: normalizedUrl, thumbnail: data.thumbnail || null });
+        setFetched({ url: normalizedUrl, thumbnail: data.thumbnail || null, caption: data.caption || null });
       } catch {
-        setFetched({ url: normalizedUrl, thumbnail: null });
+        setFetched({ url: normalizedUrl, thumbnail: null, caption: null });
       }
     }, 500);
     return () => clearTimeout(timeout);
@@ -150,9 +150,11 @@ export function ReelForm({
       tagNames: tags,
     };
 
+    // 캡션은 새로 저장할 때만, 미리보기 조회로 받은 값을 그대로 넘긴다(추가 요청 없음)
+    const caption = fetched && fetched.url === normalizedUrl ? fetched.caption : null;
     const result = isEdit
       ? await updateReel(reel!.id, formData)
-      : await createReel(formData);
+      : await createReel({ ...formData, caption });
 
     if (result.error) {
       setError(result.error);

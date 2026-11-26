@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  Download,
   UserCheck,
   UserX,
   ArrowLeft,
@@ -18,6 +19,7 @@ import {
 const iconMap = {
   LayoutDashboard,
   Users,
+  Download,
   UserCheck,
   UserX,
 };

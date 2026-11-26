@@ -22,6 +22,7 @@ const navItems = [
       { href: "/admin/members/withdrawals", label: "탈퇴 관리" },
     ],
   },
+  { href: "/admin/import", label: "인스타그램 가져오기", icon: "Download" as const },
 ];
 
 export default async function AdminLayout({

@@ -41,6 +41,8 @@ export async function deleteAccountData(userId: string, reason: string): Promise
         await tx.category.deleteMany({ where: { userId } });
         await tx.tag.deleteMany({ where: { userId } });
         await tx.adminRole.deleteMany({ where: { userId } });
+        // 인스타그램 가져오기 중간 기록(후보의 캡션, 컬렉션 이름)도 지운다. 후보는 배치를 지우면 함께 지워진다.
+        await tx.importBatch.deleteMany({ where: { userId } });
         await tx.withdrawal.create({ data: { reason } });
 
         // 마지막에 로그인 계정을 지운다. 실패하면 위의 삭제가 모두 되돌려진다.

@@ -15,6 +15,7 @@ model Reel {
   id         String         @id @default(cuid())
   url        String
   thumbnail  String?
+  caption    String?
   memo       String?
   review     String?
   visited    Boolean        @default(false)
@@ -22,6 +23,7 @@ model Reel {
   userId     String
   categories ReelCategory[]
   tags       ReelTag[]
+  embedding  ReelEmbedding?
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 
@@ -78,4 +80,42 @@ model ReelTag {
   tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([reelId, tagId])
+}
+
+model ReelEmbedding {
+  reelId    String                     @id
+  reel      Reel                       @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  embedding Unsupported("vector(768)")
+  textHash  String
+  updatedAt DateTime                   @updatedAt
+}
+
+model ImportBatch {
+  id         String            @id @default(cuid())
+  userId     String
+  createdAt  DateTime          @default(now())
+  candidates ImportCandidate[]
+
+  @@index([userId])
+}
+
+model ImportCandidate {
+  id                  String      @id @default(cuid())
+  batchId             String
+  batch               ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  url                 String
+  caption             String
+  savedAt             DateTime
+  keptCategories      String[]
+  fromCollections     String[]
+  needsAi             Boolean
+  suggestedCategories String[]
+  newCategories       String[]
+  tags                String[]
+  uncertain           Boolean     @default(false)
+  suggested           Boolean     @default(false)
+  status              String      @default("pending")
+
+  @@unique([batchId, url])
+  @@index([batchId, status])
 }

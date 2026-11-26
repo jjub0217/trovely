@@ -1,0 +1,94 @@
+[
+  {
+    "id": "q1",
+    "category": "데이트",
+    "query": "파주 사우나",
+    "expected": [
+      "https://www.instagram.com/p/DfgYC2_EoXj/"
+    ]
+  },
+  {
+    "id": "q2",
+    "category": "데이트",
+    "query": "인천 사우나",
+    "expected": [
+      "https://www.instagram.com/reel/Dda6A8sK7DV/",
+      "https://www.instagram.com/reel/Dfj0RZzvUi6/"
+    ]
+  },
+  {
+    "id": "q3",
+    "category": "데이트",
+    "query": "일산 찜질방",
+    "expected": [
+      "https://www.instagram.com/reel/Df3ZsU9Ta_f/"
+    ]
+  },
+  {
+    "id": "q4",
+    "category": "데이트",
+    "query": "바닷물 찜질",
+    "expected": [
+      "https://www.instagram.com/reel/Dfj0RZzvUi6/"
+    ]
+  },
+  {
+    "id": "q5",
+    "category": "데이트",
+    "query": "서촌 술집",
+    "expected": [
+      "https://www.instagram.com/reel/C1rXg5ES-az/",
+      "https://www.instagram.com/reel/DAyIGwMvfjd/"
+    ]
+  },
+  {
+    "id": "q6",
+    "category": "데이트",
+    "query": "고양 야경",
+    "expected": [
+      "https://www.instagram.com/p/C-UwlAlI0v_/",
+      "https://www.instagram.com/p/C7lV6f4N2MJ/"
+    ]
+  },
+  {
+    "id": "q7",
+    "category": "데이트",
+    "query": "일산 파스타 맛집",
+    "expected": [
+      "https://www.instagram.com/reel/DcithTqBIlO/"
+    ]
+  },
+  {
+    "id": "q8",
+    "category": "국내 여행지",
+    "query": "대구 고깃집",
+    "expected": [
+      "https://www.instagram.com/reel/C0gaKrMSPLP/"
+    ]
+  },
+  {
+    "id": "q9",
+    "category": "국내 여행지",
+    "query": "부산 고깃집",
+    "expected": [
+      "https://www.instagram.com/reel/CxkESLUJReU/",
+      "https://www.instagram.com/reel/Cyx0aPYvhH4/"
+    ]
+  },
+  {
+    "id": "q10",
+    "category": "국내 여행지",
+    "query": "충주 노천탕 숙소",
+    "expected": [
+      "https://www.instagram.com/reel/Cx-fTJmrMu5/"
+    ]
+  },
+  {
+    "id": "q11",
+    "category": "국내 여행지",
+    "query": "바다 앞 온천 캠핑",
+    "expected": [
+      "https://www.instagram.com/reel/DTcuwqCE44Q/"
+    ]
+  }
+]
