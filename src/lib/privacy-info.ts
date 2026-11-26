@@ -8,7 +8,7 @@ export const PRIVACY_INFO = {
   officerName: "강주현",
   // 2026-11-26 사용자 결정: 기존 계정을 문의 메일로 공개
   contactEmail: "devel.jjub@gmail.com",
-  effectiveDate: `${PENDING} 배포일`,
+  effectiveDate: "2026년 11월 26일",
   // 2026-11-26 확인: 운영 Supabase는 무료 요금제라 예약 백업이 없다(Database → Backups "Free Plan does not include project backups")
   backupRetention: "운영 데이터베이스의 별도 백업은 보관하지 않습니다. 그래서 삭제한 정보는 백업에도 남지 않습니다.",
   processors: [
