@@ -5,7 +5,8 @@
 const PENDING = "[확인 필요]";
 
 export const PRIVACY_INFO = {
-  officerName: `${PENDING} 운영자 실명`,
+  officerName: "강주현",
+  // 후보: trovely.contact@gmail.com (사용자가 계정을 만든 뒤 확정. 확정 전에는 공개하지 않는다)
   contactEmail: `${PENDING} Trovely 문의 메일`,
   effectiveDate: `${PENDING} 배포일`,
   // Supabase 무료 요금제의 백업 제공 여부를 대시보드(Database → Backups)에서 확인한 뒤 적는다
@@ -15,7 +16,8 @@ export const PRIVACY_INFO = {
       name: "Supabase, Inc.",
       task: "데이터베이스, 회원 인증(로그인, 비밀번호 재설정 메일), 썸네일 이미지 저장",
       // 운영 프로젝트 Project Settings → General의 Region
-      location: `${PENDING} 운영 프로젝트 리전`,
+      // 운영 프로젝트 리전 ap-northeast-2(AWS 서울), 2026-11-26 사용자 확인
+      location: "대한민국(서울)",
     },
     {
       name: "Vercel Inc.",
@@ -24,6 +26,7 @@ export const PRIVACY_INFO = {
       location: "서버 실행: 대한민국(서울). 요청 전달과 정적 파일 제공: Vercel의 전 세계 지점",
     },
   ],
-  overseasTransfer: `${PENDING} 국외 이전 항목(이전 국가, 시기와 방법, 이전받는 자의 연락처, 보유 기간, 거부 방법). 리전 확인 뒤 작성`,
-  children: `${PENDING} 만 14세 미만 가입 정책`,
+  overseasTransfer:
+    "개인정보는 대한민국(서울)에 있는 서버에 저장하고 처리합니다. 두 업체의 본사는 미국에 있으며, 업체 운영 정책에 따라 장애 대응 등을 위해 해외에서 접근할 수 있습니다.",
+  children: "Trovely는 만 14세 이상만 가입할 수 있습니다. 만 14세 미만 아동의 개인정보는 받지 않으며, 만 14세 미만이 가입한 사실을 알게 되면 계정과 정보를 삭제합니다.",
 } as const;
