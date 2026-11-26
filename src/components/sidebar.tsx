@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signOut, deleteAccount } from "@/lib/actions";
-import { Mail, Film, Star, FolderCog, KeyRound, BookmarkCheck, LogOut, Tags, UserX, X } from "lucide-react";
+import { Mail, Film, Star, FolderCog, KeyRound, BookmarkCheck, LogOut, Tags, UserX, X, ShieldCheck } from "lucide-react";
 
 export function Sidebar({
   open,
@@ -136,6 +136,14 @@ export function Sidebar({
             >
               <KeyRound size={16} className="text-gray-500" />
               <span className="text-sm">비밀번호 변경</span>
+            </Link>
+            <Link
+              href="/privacy"
+              onClick={onClose}
+              className="flex items-center gap-2.5 text-gray-300 hover:text-gray-100 py-2"
+            >
+              <ShieldCheck size={16} className="text-gray-500" />
+              <span className="text-sm">개인정보 처리방침</span>
             </Link>
           </div>
 

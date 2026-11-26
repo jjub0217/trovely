@@ -151,6 +151,9 @@ export default function SignupPage() {
         <GoogleOAuthButton />
         <KakaoOAuthButton />
       </div>
+      <Link href="/privacy" className="text-center text-xs text-gray-500 underline underline-offset-2 mt-4">
+        개인정보 처리방침
+      </Link>
       <p className="text-center text-sm text-gray-400 mt-6">
         이미 계정이 있으신가요?{" "}
         <Link href="/login" className="text-purple-400 hover:underline">
