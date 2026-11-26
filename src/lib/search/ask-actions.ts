@@ -1,21 +1,28 @@
 "use server";
 
 import { isAdmin, requireAuth } from "@/lib/auth";
-import { DEMO_MODE } from "@/lib/demo";
+import { DEMO_MODE, DEMO_USER_ID } from "@/lib/demo";
 import { describeAiError } from "@/lib/ai/gemini";
 import type { ReelWithRelations } from "@/types";
-import { answerWithChips, readChips } from "./ask-core";
-import type { AnswerResult, AskChip } from "./ask";
+import { answerWithChips, answerWithChipsDemo, readChips } from "./ask-core";
+import { consumeDemoQuota, DEMO_QUOTA_MESSAGE } from "@/lib/demo/usage";
+import { isQuestionTooLong, MAX_QUESTION_LENGTH, type AnswerResult, type AskChip } from "./ask";
 
 export type AskResult = { chips: AskChip[]; answer: AnswerResult; sources: ReelWithRelations[] };
 
-async function guard(question: string): Promise<{ userId: string; q: string } | { error: string }> {
-  if (DEMO_MODE) return { error: "데모 모드에서는 쓸 수 없습니다" };
-  const userId = await requireAuth();
-  if (!(await isAdmin())) return { error: "관리자만 쓸 수 있습니다" };
+async function guard(question: string): Promise<{ userId: string; q: string; demo: boolean } | { error: string }> {
   const q = question.trim();
   if (!q) return { error: "질문을 입력해 주세요" };
-  return { userId, q };
+  // 사용량을 쓰기 전에 길이부터 막는다(아주 긴 글로 한 번에 큰 요금이 나가지 않게)
+  if (isQuestionTooLong(q)) return { error: `질문은 ${MAX_QUESTION_LENGTH}자까지 쓸 수 있어요.` };
+  if (DEMO_MODE) {
+    // 데모: 로그인 없이 누구나 쓰되, AI를 부르는 요청마다 하루 상한(데모 전용 DB)에서 1씩 뺀다
+    if (!(await consumeDemoQuota("ask"))) return { error: DEMO_QUOTA_MESSAGE };
+    return { userId: DEMO_USER_ID, q, demo: true };
+  }
+  const userId = await requireAuth();
+  if (!(await isAdmin())) return { error: "관리자만 쓸 수 있습니다" };
+  return { userId, q, demo: false };
 }
 
 /**
@@ -46,7 +53,7 @@ export async function answerQuestion({
   const g = await guard(question);
   if ("error" in g) return g;
   try {
-    const r = await answerWithChips(g.userId, g.q, chips);
+    const r = g.demo ? await answerWithChipsDemo(g.q, chips) : await answerWithChips(g.userId, g.q, chips);
     return { chips: r.chips, answer: r.answer, sources: r.sources };
   } catch (e) {
     return { error: describeAiError(e) };

@@ -7,9 +7,12 @@ import { refreshEmbeddingsAfterResponse } from "./search/embedding-refresh";
 import { semanticReels } from "./search/semantic";
 import { buildKeywordWhere } from "./search/keyword-where";
 import { similarExtras } from "./search/merge";
+import { isQuestionTooLong } from "./search/ask";
+import { demoSemanticIds } from "./search/demo-search";
+import { consumeDemoQuota } from "./demo/usage";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { requireAuth } from "./auth";
+import { isAdmin, requireAuth } from "./auth";
 import { normalizeReelUrl, type ReelSource } from "./reel-url";
 import { normalizeTagName, normalizeTagNames } from "./tag-name";
 import { normalizeThumbnailUrl } from "./thumbnail-url";
@@ -265,11 +268,24 @@ export async function getSimilarReels({
   query: string;
   categoryId?: string | "uncategorized";
   source?: ReelSource;
-}): Promise<ReelWithRelations[]> {
-  if (DEMO_MODE) return [];
-  const userId = await requireAuth();
+}): Promise<{ items: ReelWithRelations[]; limited?: boolean }> {
   const q = query.trim();
-  if (!q) return [];
+  // 아주 긴 검색어는 벡터로 바꾸지 않는다(사용량을 쓰기 전에 막는다)
+  if (!q || isQuestionTooLong(q)) return { items: [] };
+  if (DEMO_MODE) {
+    // 데모: 방문자 누구나 쓰되 하루 상한(데모 전용 DB)을 넘으면 Gemini를 부르지 않는다
+    if (!(await consumeDemoQuota("search"))) return { items: [], limited: true };
+    const ids = await demoSemanticIds(q, { categoryId, source }, 20);
+    const keywordIds = getMockReels({ search: q, categoryId, source, take: 1000 }).items.map((r) => r.id);
+    const items = similarExtras(keywordIds, ids).flatMap((id) => {
+      const r = getMockReel(id);
+      return r ? [r] : [];
+    });
+    return { items: items as unknown as ReelWithRelations[] };
+  }
+  const userId = await requireAuth();
+  // 운영에서는 관리자 게시물만 벡터가 있다. 다른 가입자는 검색어를 Gemini로 보내지 않고 키워드 검색만 쓴다.
+  if (!(await isAdmin())) return { items: [] };
   const [semantic, keywordIds] = await Promise.all([
     semanticReels(userId, q, { categoryId, source }, undefined, { fast: true }),
     prisma.reel
@@ -277,7 +293,7 @@ export async function getSimilarReels({
       .then((rows) => rows.map((r) => r.id)),
   ]);
   const extra = new Set(similarExtras(keywordIds, semantic.map((r) => r.id)));
-  return semantic.filter((r) => extra.has(r.id));
+  return { items: semantic.filter((r) => extra.has(r.id)) };
 }
 
 export async function getReel(id: string) {

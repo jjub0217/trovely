@@ -72,3 +72,17 @@ test("splitParagraphs: 빈 줄이나 줄바꿈으로 나눈 문단, 빈 문단�
 test("buildAnswerPrompt: 관련된 내용끼리 문단을 나누라는 규칙", () => {
   assert.match(buildAnswerPrompt("q", []), /문단/);
 });
+
+import { MAX_QUESTION_LENGTH, MAX_CHIPS, MAX_CHIP_LENGTH, isQuestionTooLong } from "./ask";
+
+test("질문 길이 상한: 너무 긴 질문은 AI를 부르기 전에 막는다(비용 상한 지키기)", () => {
+  assert.equal(isQuestionTooLong("가".repeat(MAX_QUESTION_LENGTH)), false);
+  assert.equal(isQuestionTooLong("가".repeat(MAX_QUESTION_LENGTH + 1)), true);
+});
+
+test("validateChips: 조건은 정해진 개수까지, 너무 긴 낱말은 버린다", () => {
+  const many = { chips: Array.from({ length: 20 }, (_, i) => ({ label: `낱말${i}`, kind: "keyword" })) };
+  assert.equal(validateChips(many).length, MAX_CHIPS);
+  const long = { chips: [{ label: "가".repeat(MAX_CHIP_LENGTH + 1), kind: "keyword" }, { label: "파주", kind: "keyword" }] };
+  assert.deepEqual(validateChips(long), [{ label: "파주", kind: "keyword" }]);
+});

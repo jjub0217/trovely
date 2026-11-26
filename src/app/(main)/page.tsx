@@ -22,13 +22,13 @@ export default async function HomePage({
   const source = parseReelSource(params.source);
 
   // 뜻 검색이 실패해도(키 없음, AI 오류) 낱말 결과는 그대로 보여 준다
-  async function loadSimilar() {
-    if (!search?.trim()) return [];
+  async function loadSimilar(): Promise<{ items: Awaited<ReturnType<typeof getSimilarReels>>["items"]; limited?: boolean }> {
+    if (!search?.trim()) return { items: [] };
     try {
       return await getSimilarReels({ query: search, categoryId, source });
     } catch (e) {
       console.error("[search] 뜻이 비슷한 릴스를 못 불러옴", e instanceof Error ? e.message : e);
-      return [];
+      return { items: [] };
     }
   }
 
@@ -57,7 +57,8 @@ export default async function HomePage({
       <ReelGrid
         initialReels={items}
         initialCursor={nextCursor}
-        similarReels={similar}
+        similarReels={similar.items}
+        similarLimited={similar.limited}
         search={search}
         categoryId={categoryId}
         source={source}
