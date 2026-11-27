@@ -39,17 +39,6 @@ test("toVectorLiteral: pgvector 글 형식, 차원이 다르면 오류", () => {
   assert.throws(() => toVectorLiteral([1, Number.NaN, 2], 3), /숫자/);
 });
 
-import { filterAdminOwned } from "./embedding-text";
-
-test("filterAdminOwned: 관리자 게시물만 남긴다", () => {
-  const reels = [
-    { id: "a", userId: "admin" },
-    { id: "b", userId: "user" },
-    { id: "c", userId: "admin" },
-  ];
-  assert.deepEqual(filterAdminOwned(reels, new Set(["admin"])), ["a", "c"]);
-  assert.deepEqual(filterAdminOwned(reels, new Set()), []);
-});
 
 test("includePrivateNotes false면 메모와 후기를 빼고 해시도 달라진다", () => {
   const r = { ...base, memo: "비밀 메모", review: "좋았음" };

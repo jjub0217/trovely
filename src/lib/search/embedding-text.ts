@@ -44,8 +44,3 @@ export function toVectorLiteral(values: number[], dim: number): string {
   if (values.some((v) => !Number.isFinite(v))) throw new Error("벡터에 숫자가 아닌 값이 있습니다");
   return `[${values.join(",")}]`;
 }
-
-/** 운영에서는 관리자 게시물만 벡터로 만든다(다른 가입자의 메모, 후기를 Gemini로 보내지 않기 위해, 2026-11-25 사용자 결정) */
-export function filterAdminOwned(reels: { id: string; userId: string }[], adminIds: Set<string>): string[] {
-  return reels.filter((r) => adminIds.has(r.userId)).map((r) => r.id);
-}
