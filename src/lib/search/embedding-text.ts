@@ -10,14 +10,18 @@ export type EmbeddingSource = {
   tags: string[];
 };
 
-/** 벡터로 바꿀 글. 줄 순서: 카테고리, 태그, 캡션, 메모, 후기(빈 칸은 생략) */
-export function buildEmbeddingText(r: EmbeddingSource): string {
+/**
+ * 벡터로 바꿀 글. 줄 순서: 카테고리, 태그, 캡션, 메모, 후기(빈 칸은 생략).
+ * includePrivateNotes가 false면 메모와 후기를 뺀다(일반 가입자: 직접 쓴 메모, 후기는 Gemini로 보내지 않는다).
+ */
+export function buildEmbeddingText(r: EmbeddingSource, options: { includePrivateNotes?: boolean } = {}): string {
+  const includePrivateNotes = options.includePrivateNotes ?? true;
   const lines: [string, string][] = [
     ["카테고리", r.categories.join(", ")],
     ["태그", r.tags.join(", ")],
     ["캡션", (r.caption ?? "").trim().slice(0, CAPTION_LIMIT)],
-    ["메모", (r.memo ?? "").trim()],
-    ["후기", (r.review ?? "").trim()],
+    ["메모", includePrivateNotes ? (r.memo ?? "").trim() : ""],
+    ["후기", includePrivateNotes ? (r.review ?? "").trim() : ""],
   ];
   return lines
     .filter(([, v]) => v)

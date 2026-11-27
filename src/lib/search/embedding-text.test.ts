@@ -50,3 +50,11 @@ test("filterAdminOwned: 관리자 게시물만 남긴다", () => {
   assert.deepEqual(filterAdminOwned(reels, new Set(["admin"])), ["a", "c"]);
   assert.deepEqual(filterAdminOwned(reels, new Set()), []);
 });
+
+test("includePrivateNotes false면 메모와 후기를 빼고 해시도 달라진다", () => {
+  const r = { ...base, memo: "비밀 메모", review: "좋았음" };
+  const t = buildEmbeddingText(r, { includePrivateNotes: false });
+  assert.ok(!t.includes("비밀 메모") && !t.includes("좋았음") && !t.includes("후기:"));
+  assert.equal(t, "카테고리: 데이트\n태그: 파주, 사우나\n캡션: 파주 노천탕 사우나");
+  assert.notEqual(hashText(t), hashText(buildEmbeddingText(r)));
+});
