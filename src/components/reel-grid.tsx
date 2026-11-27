@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronDown } from "lucide-react";
+import { SearchX } from "lucide-react";
 import { ReelCard } from "./reel-card";
 import { getReels, getSimilarReels } from "@/lib/actions";
 import { ReelWithRelations } from "@/types";
 import { clearListReturnState, readListReturnState } from "@/lib/list-navigation";
 import {
   AI_SEARCH_QUOTA_MESSAGE,
-  NO_KEYWORD_MATCH_NOTE,
+  NO_KEYWORD_RESULT,
   SIMILAR_EMPTY,
   SIMILAR_LOADING,
   SIMILAR_MORE_BUTTON,
@@ -32,19 +32,10 @@ export function ReelGrid({
   source,
   status,
   sort,
-  similarReels = [],
-  similarLimited = false,
-  similarNeedsConsent = false,
   canLoadSimilar = false,
 }: {
   initialReels: ReelWithRelations[];
-  /** 낱말 결과가 0개일 때 서버가 미리 불러온 "뜻이 비슷한 릴스"(홈 화면 검색만) */
-  similarReels?: ReelWithRelations[];
-  /** 하루 사용량을 넘어서 비슷한 콘텐츠를 못 불러온 경우 */
-  similarLimited?: boolean;
-  /** 낱말 결과가 0개인데 AI 검색에 동의하지 않아 미리 못 불러온 경우(버튼을 누르면 동의 창) */
-  similarNeedsConsent?: boolean;
-  /** 낱말 결과 아래에 "비슷한 콘텐츠 더 보기" 버튼을 보여 줄지(검색어가 있고 쓸 수 있는 사람) */
+  /** "비슷한 콘텐츠 찾기" 버튼을 보여 줄지(홈 화면 검색에서 검색어가 있고 누를 수 있는 사람). 낱말 결과 수와 관계없이 같은 버튼 */
   canLoadSimilar?: boolean;
   initialCursor: string | null;
   search?: string;
@@ -65,7 +56,7 @@ export function ReelGrid({
   // 서버가 새 initialReels를 보내면(검색·필터·갱신) 누적 상태 리셋.
   // useEffect+setState 대신 "렌더 중 prop 변화 감지"로 처리 (React 공식 패턴, set-state-in-effect 회피).
   const [prevInitialReels, setPrevInitialReels] = useState(initialReels);
-  // 상황 2(낱말 결과가 있을 때) 비슷한 릴스는 버튼을 누를 때 서버에서 불러오고, 새로 검색하면 처음 상태로 돌아간다
+  // 비슷한 릴스는 버튼을 누를 때 서버에서 불러오고, 새로 검색하면 처음 상태로 돌아간다
   const [similar, setSimilar] = useState<SimilarState>(SIMILAR_IDLE);
   const [consentOpen, setConsentOpen] = useState(false);
   if (initialReels !== prevInitialReels) {
@@ -206,23 +197,10 @@ export function ReelGrid({
     </div>
   );
 
-  // 상황 1: 낱말 결과가 없으면 비슷한 릴스가 주 목록이 된다
-  if (reels.length === 0 && similarReels.length > 0 && search) {
-    return (
-      <div className="px-6 pb-6">
-        <p className="mb-3 text-sm text-gray-400">{NO_KEYWORD_MATCH_NOTE}</p>
-        {gridOf(similarReels)}
-      </div>
-    );
-  }
-
-  // 상황 2: 낱말 결과를 끝까지 불러온 뒤 맨 아래에 버튼 하나. 누르면 불러와서 펼친다(개수는 누르기 전에 알 수 없어 표시하지 않음).
-  // 결과 수와 상관없이 늘 같은 테두리 버튼(보조 행동, 2026-11-25 사용자 결정).
-  const quotaNote = similarLimited && !cursor && (
-    <p className="px-6 pb-6 text-center text-xs text-gray-500">{QUOTA_MESSAGE}</p>
-  );
-
-  const showSimilarButton = Boolean(search) && !cursor && (reels.length > 0 ? canLoadSimilar : similarNeedsConsent);
+  // 낱말 결과를 끝까지 불러온 뒤(0개면 안내 문구 아래) 버튼 하나. 누르면 불러와서 버튼 자리에 펼친다.
+  // 개수는 누르기 전에 알 수 없어 표시하지 않는다. 늘 같은 테두리 버튼(보조 행동, 2026-11-25 사용자 결정).
+  // 0개일 때도 자동으로 불러오지 않는다(2026-11-27 사용자 결정: 두 상황을 같은 버튼으로 통일, 사용량은 누를 때만 빠짐)
+  const showSimilarButton = Boolean(search) && !cursor && canLoadSimilar;
   const similarSection = showSimilarButton && (
     <section className="px-6 pb-6">
       {similar.status === "done" ? (
@@ -238,14 +216,7 @@ export function ReelGrid({
           disabled={similar.status === "loading"}
           className="flex h-12 w-full items-center justify-center gap-1 rounded-xl border border-gray-700 text-sm text-purple-200 disabled:opacity-60"
         >
-          {similar.status === "loading" ? (
-            SIMILAR_LOADING
-          ) : (
-            <>
-              {SIMILAR_MORE_BUTTON}
-              <ChevronDown size={16} aria-hidden />
-            </>
-          )}
+          {similar.status === "loading" ? SIMILAR_LOADING : SIMILAR_MORE_BUTTON}
         </button>
       )}
     </section>
@@ -264,13 +235,21 @@ export function ReelGrid({
 
   if (reels.length === 0) {
     const hasFilters = Boolean(search || categoryIds.length > 0 || status);
+    // 검색어만으로 검색했으면 "검색어가 포함된" 안내. 카테고리나 출처도 골랐으면 그 조건 때문일 수 있어 "조건에 맞는"
+    const searchOnly = Boolean(search) && categoryIds.length === 0 && !source && !status;
     return (
       <>
-        <div className="px-6 py-12 text-center text-gray-500 text-sm">
-          {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
-        </div>
+        {searchOnly ? (
+          <div className="flex flex-col items-center gap-3 px-6 py-12 text-center text-sm text-gray-300">
+            <SearchX size={28} className="text-gray-500" aria-hidden />
+            <p>{NO_KEYWORD_RESULT}</p>
+          </div>
+        ) : (
+          <div className="px-6 py-12 text-center text-gray-500 text-sm">
+            {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
+          </div>
+        )}
         {similarSection}
-        {quotaNote}
         {consentSheet}
       </>
     );
@@ -291,7 +270,6 @@ export function ReelGrid({
         )}
       </div>
       {similarSection}
-      {quotaNote}
       {consentSheet}
     </>
   );
