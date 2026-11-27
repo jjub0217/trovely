@@ -8,6 +8,7 @@ import { parseReelSource } from "@/lib/reel-url";
 import { isAdmin } from "@/lib/auth";
 import { DEMO_MODE } from "@/lib/demo";
 import { isAiSearchPublic } from "@/lib/ai-search/limits";
+import { AiSearchNotice } from "@/components/ai-search-notice";
 
 const SearchBar = nextDynamic(() => import("@/components/search-bar").then((m) => m.SearchBar));
 const CategoryFilter = nextDynamic(() => import("@/components/category-filter").then((m) => m.CategoryFilter));
@@ -51,7 +52,14 @@ export default async function HomePage({
 
   return (
     <div>
-      <Header email={email} totalReels={stats.totalReels} visitedReels={stats.visitedReels} />
+      <Header
+        email={email}
+        totalReels={stats.totalReels}
+        visitedReels={stats.visitedReels}
+        showAiSettings={!DEMO_MODE && isAiSearchPublic()}
+      />
+      {/* 공개 전 7일 공지(서버 전용 환경변수 AI_SEARCH_NOTICE="true"일 때) */}
+      {!DEMO_MODE && process.env.AI_SEARCH_NOTICE === "true" && <AiSearchNotice />}
       <Suspense>
         <SearchBar />
       </Suspense>

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signOut, deleteAccount } from "@/lib/actions";
-import { Mail, Film, Star, FolderCog, KeyRound, BookmarkCheck, LogOut, Tags, UserX, X, ShieldCheck } from "lucide-react";
+import { Mail, Film, Star, FolderCog, KeyRound, BookmarkCheck, LogOut, Tags, UserX, X, ShieldCheck, Sparkles } from "lucide-react";
 
 export function Sidebar({
   open,
@@ -12,12 +12,15 @@ export function Sidebar({
   email,
   totalReels,
   visitedReels,
+  showAiSettings = false,
 }: {
   open: boolean;
   onClose: () => void;
   email: string;
   totalReels: number;
   visitedReels: number;
+  /** AI 검색 공개 스위치가 켜졌을 때만 "AI 검색 설정" 메뉴 */
+  showAiSettings?: boolean;
 }) {
   const router = useRouter();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -129,6 +132,16 @@ export function Sidebar({
               <Tags size={16} className="text-gray-500" />
               <span className="text-sm">태그 관리</span>
             </Link>
+            {showAiSettings && (
+              <Link
+                href="/settings/ai"
+                onClick={onClose}
+                className="flex items-center gap-2.5 text-gray-300 hover:text-gray-100 py-2"
+              >
+                <Sparkles size={16} className="text-gray-500" />
+                <span className="text-sm">AI 검색 설정</span>
+              </Link>
+            )}
             <Link
               href="/settings/password"
               onClick={onClose}
