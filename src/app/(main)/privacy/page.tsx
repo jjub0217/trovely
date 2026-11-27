@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { PRIVACY_INFO } from "@/lib/privacy-info";
+import { isAiSearchPublic } from "@/lib/ai-search/limits";
 
 export const metadata: Metadata = { title: "개인정보 처리방침" };
 
@@ -25,6 +26,8 @@ function List({ items }: { items: React.ReactNode[] }) {
 
 export default function PrivacyPage() {
   const info = PRIVACY_INFO;
+  // AI 검색 항목은 공개 전 공지나 공개가 시작된 뒤에만 보인다(그 전에는 지금 방침 그대로)
+  const showAiSearch = process.env.AI_SEARCH_NOTICE === "true" || isAiSearchPublic();
   return (
     <main className="px-6 py-10 flex flex-col gap-8">
       <div className="flex flex-col gap-2">
@@ -112,6 +115,22 @@ export default function PrivacyPage() {
           </table>
         </div>
         <p>{info.overseasTransfer}</p>
+        {showAiSearch && (
+          <>
+            <p className="font-medium text-gray-200">AI 검색(선택 기능, 동의한 경우만)</p>
+            <List
+              items={[
+                `받는 자: ${info.aiSearch.recipient} (문의: ${info.aiSearch.contact})`,
+                `보내는 항목: ${info.aiSearch.items}`,
+                `보내는 국가: ${info.aiSearch.country}`,
+                `보내는 시기와 방법: ${info.aiSearch.timing}`,
+                `목적: ${info.aiSearch.purpose}`,
+                `보유 기간: ${info.aiSearch.retention}`,
+                `거부 방법: ${info.aiSearch.refuse}`,
+              ]}
+            />
+          </>
+        )}
         <p>
           콘텐츠 썸네일과 설명 글을 가져오기 위해 저장한 게시물 주소를 Iframely, Microlink, YouTube, Instagram에 보냅니다. 이때 이메일 등 계정 정보는 함께 보내지 않습니다.
         </p>
@@ -123,6 +142,7 @@ export default function PrivacyPage() {
             "저장한 콘텐츠, 카테고리, 태그, 메모, 후기는 서비스 안에서 언제든 확인, 수정, 삭제할 수 있습니다.",
             "비밀번호는 메뉴의 비밀번호 변경에서 바꿀 수 있습니다.",
             "메뉴의 회원탈퇴로 계정과 모든 데이터를 삭제할 수 있습니다.",
+            ...(showAiSearch ? ["AI 검색은 메뉴의 AI 검색 설정에서 언제든 끌 수 있습니다. 끄면 Trovely에 저장된 AI 검색용 데이터를 바로 삭제합니다."] : []),
             "그 밖에 개인정보 열람, 정정, 삭제, 처리 정지를 원하면 아래 문의 메일로 요청할 수 있습니다.",
             "Google, 카카오 계정에서 Trovely 연결을 끊고 싶다면 각 서비스의 계정 설정에서 끊을 수 있습니다.",
           ]}

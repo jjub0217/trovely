@@ -119,3 +119,57 @@ model ImportCandidate {
   @@unique([batchId, url])
   @@index([batchId, status])
 }
+
+// AI 검색(비슷한 콘텐츠 찾기) 동의 현재 상태. generation은 동의를 켜거나 끌 때마다 1씩 올라간다(작업 버전)
+model AiSearchConsent {
+  userId        String    @id
+  enabled       Boolean
+  policyVersion String
+  generation    Int       @default(0)
+  consentedAt   DateTime?
+  revokedAt     DateTime?
+  // 게시물 전체 만들기가 도는 중이면 끝날 예정 시각(한 사람에게 작업 하나만 돌게 한다)
+  buildingUntil DateTime?
+}
+
+// AI 검색 동의와 철회 이력. 탈퇴하면 지운다
+model AiSearchConsentLog {
+  id            String   @id @default(cuid())
+  userId        String
+  action        String // "consent" | "revoke"
+  policyVersion String
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+// 같은 날 같은 검색어의 벡터 재사용. 검색어 원문은 저장하지 않고 해시만. embedding이 비어 있으면 만드는 중
+model QueryEmbeddingCache {
+  userId    String
+  day       String // 한국 날짜 YYYY-MM-DD
+  model     String
+  textHash  String
+  embedding Unsupported("vector(768)")?
+  createdAt DateTime                    @default(now())
+
+  @@id([userId, day, model, textHash])
+}
+
+// 가입자별 하루 AI 사용량
+model AiUsageUser {
+  userId String
+  day    String
+  kind   String // "query" | "document"
+  count  Int    @default(0)
+
+  @@id([userId, day, kind])
+}
+
+// 서비스 전체 하루 AI 사용량
+model AiUsageTotal {
+  day   String
+  kind  String
+  count Int    @default(0)
+
+  @@id([day, kind])
+}

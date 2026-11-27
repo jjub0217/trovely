@@ -10,10 +10,12 @@ export function Header({
   email,
   totalReels,
   visitedReels,
+  showAiSettings = false,
 }: {
   email: string;
   totalReels: number;
   visitedReels: number;
+  showAiSettings?: boolean;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -41,6 +43,7 @@ export function Header({
         email={email}
         totalReels={totalReels}
         visitedReels={visitedReels}
+        showAiSettings={showAiSettings}
       />
     </>
   );

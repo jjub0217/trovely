@@ -3,8 +3,12 @@ import { normalizeCategoryIds } from "@/lib/search/category-selection";
 import { Suspense } from "react";
 import { Header } from "@/components/header";
 import { ReelGrid } from "@/components/reel-grid";
-import { getReels, getCategories, getUserStats, getUserEmail, getSimilarReels } from "@/lib/actions";
+import { getReels, getCategories, getUserStats, getUserEmail } from "@/lib/actions";
 import { parseReelSource } from "@/lib/reel-url";
+import { isAdmin } from "@/lib/auth";
+import { DEMO_MODE } from "@/lib/demo";
+import { isAiSearchPublic } from "@/lib/ai-search/limits";
+import { AiSearchNotice } from "@/components/ai-search-notice";
 
 const SearchBar = nextDynamic(() => import("@/components/search-bar").then((m) => m.SearchBar));
 const CategoryFilter = nextDynamic(() => import("@/components/category-filter").then((m) => m.CategoryFilter));
@@ -23,28 +27,26 @@ export default async function HomePage({
   const categoryIds = normalizeCategoryIds(params.category);
   const source = parseReelSource(params.source);
 
-  // 뜻 검색이 실패해도(키 없음, AI 오류) 낱말 결과는 그대로 보여 준다
-  async function loadSimilar(): Promise<{ items: Awaited<ReturnType<typeof getSimilarReels>>["items"]; limited?: boolean }> {
-    if (!search?.trim()) return { items: [] };
-    try {
-      return await getSimilarReels({ query: search, categoryIds, source });
-    } catch (e) {
-      console.error("[search] 뜻이 비슷한 릴스를 못 불러옴", e instanceof Error ? e.message : e);
-      return { items: [] };
-    }
-  }
-
-  const [{ items, nextCursor }, similar, categories, stats, email] = await Promise.all([
+  const [{ items, nextCursor }, categories, stats, email, admin] = await Promise.all([
     getReels({ search, categoryIds, source, take: 10 }),
-    loadSimilar(),
     getCategories(),
     getUserStats(),
     getUserEmail(),
+    isAdmin(),
   ]);
+  // 비슷한 콘텐츠는 늘 버튼을 누를 때 불러온다(2026-11-27 사용자 결정). 공개 전에는 일반 가입자에게 버튼을 보여 주지 않는다
+  const canLoadSimilar = Boolean(search?.trim()) && (DEMO_MODE || admin || isAiSearchPublic());
 
   return (
     <div>
-      <Header email={email} totalReels={stats.totalReels} visitedReels={stats.visitedReels} />
+      <Header
+        email={email}
+        totalReels={stats.totalReels}
+        visitedReels={stats.visitedReels}
+        showAiSettings={!DEMO_MODE && isAiSearchPublic()}
+      />
+      {/* 공개 전 7일 공지(서버 전용 환경변수 AI_SEARCH_NOTICE="true"일 때) */}
+      {!DEMO_MODE && process.env.AI_SEARCH_NOTICE === "true" && <AiSearchNotice />}
       <Suspense>
         <SearchBar />
       </Suspense>
@@ -59,8 +61,7 @@ export default async function HomePage({
       <ReelGrid
         initialReels={items}
         initialCursor={nextCursor}
-        similarReels={similar.items}
-        similarLimited={similar.limited}
+        canLoadSimilar={canLoadSimilar}
         search={search}
         categoryIds={categoryIds}
         source={source}

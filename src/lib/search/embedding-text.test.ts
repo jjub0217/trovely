@@ -39,14 +39,11 @@ test("toVectorLiteral: pgvector 글 형식, 차원이 다르면 오류", () => {
   assert.throws(() => toVectorLiteral([1, Number.NaN, 2], 3), /숫자/);
 });
 
-import { filterAdminOwned } from "./embedding-text";
 
-test("filterAdminOwned: 관리자 게시물만 남긴다", () => {
-  const reels = [
-    { id: "a", userId: "admin" },
-    { id: "b", userId: "user" },
-    { id: "c", userId: "admin" },
-  ];
-  assert.deepEqual(filterAdminOwned(reels, new Set(["admin"])), ["a", "c"]);
-  assert.deepEqual(filterAdminOwned(reels, new Set()), []);
+test("includePrivateNotes false면 메모와 후기를 빼고 해시도 달라진다", () => {
+  const r = { ...base, memo: "비밀 메모", review: "좋았음" };
+  const t = buildEmbeddingText(r, { includePrivateNotes: false });
+  assert.ok(!t.includes("비밀 메모") && !t.includes("좋았음") && !t.includes("후기:"));
+  assert.equal(t, "카테고리: 데이트\n태그: 파주, 사우나\n캡션: 파주 노천탕 사우나");
+  assert.notEqual(hashText(t), hashText(buildEmbeddingText(r)));
 });

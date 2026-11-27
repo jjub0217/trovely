@@ -2,13 +2,26 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronDown } from "lucide-react";
 import { ReelCard } from "./reel-card";
-import { getReels } from "@/lib/actions";
+import { getReels, getSimilarReels } from "@/lib/actions";
 import { ReelWithRelations } from "@/types";
 import { clearListReturnState, readListReturnState } from "@/lib/list-navigation";
-import { NO_KEYWORD_MATCH_NOTE, SIMILAR_MORE_BUTTON } from "@/lib/search/labels";
+import {
+  AI_SEARCH_QUOTA_MESSAGE,
+  NO_KEYWORD_RESULT,
+  SIMILAR_EMPTY,
+  SIMILAR_LOADING,
+  SIMILAR_MORE_BUTTON,
+  SIMILAR_PREPARING,
+} from "@/lib/search/labels";
 import { DEMO_QUOTA_MESSAGE } from "@/lib/demo/quota-message";
+import { DEMO_MODE } from "@/lib/demo";
+import { AiConsentSheet } from "./ai-consent-sheet";
+
+const QUOTA_MESSAGE = DEMO_MODE ? DEMO_QUOTA_MESSAGE : AI_SEARCH_QUOTA_MESSAGE;
+
+type SimilarState = { status: "idle" | "loading" | "done"; items: ReelWithRelations[]; note?: string };
+const SIMILAR_IDLE: SimilarState = { status: "idle", items: [] };
 
 export function ReelGrid({
   initialReels,
@@ -18,14 +31,11 @@ export function ReelGrid({
   source,
   status,
   sort,
-  similarReels = [],
-  similarLimited = false,
+  canLoadSimilar = false,
 }: {
   initialReels: ReelWithRelations[];
-  /** 낱말 결과를 끝까지 불러온 뒤 아래에 붙이는 "뜻이 비슷한 릴스"(홈 화면 검색만) */
-  similarReels?: ReelWithRelations[];
-  /** 데모 하루 사용량을 넘어서 비슷한 콘텐츠를 못 불러온 경우 */
-  similarLimited?: boolean;
+  /** "비슷한 콘텐츠 찾기" 버튼을 보여 줄지(홈 화면 검색에서 검색어가 있고 누를 수 있는 사람). 낱말 결과 수와 관계없이 같은 버튼 */
+  canLoadSimilar?: boolean;
   initialCursor: string | null;
   search?: string;
   /** 고른 카테고리(빈 목록 = 전체, ["uncategorized"] = 미분류, 그 밖에는 모두 가진 게시물) */
@@ -45,13 +55,15 @@ export function ReelGrid({
   // 서버가 새 initialReels를 보내면(검색·필터·갱신) 누적 상태 리셋.
   // useEffect+setState 대신 "렌더 중 prop 변화 감지"로 처리 (React 공식 패턴, set-state-in-effect 회피).
   const [prevInitialReels, setPrevInitialReels] = useState(initialReels);
-  // 상황 2(낱말 결과가 있을 때) 비슷한 릴스는 버튼을 눌러야 펼치고, 새로 검색하면 다시 접는다
-  const [similarOpen, setSimilarOpen] = useState(false);
+  // 비슷한 릴스는 버튼을 누를 때 서버에서 불러오고, 새로 검색하면 처음 상태로 돌아간다
+  const [similar, setSimilar] = useState<SimilarState>(SIMILAR_IDLE);
+  const [consentOpen, setConsentOpen] = useState(false);
   if (initialReels !== prevInitialReels) {
     setPrevInitialReels(initialReels);
     setReels(initialReels);
     setCursor(initialCursor);
-    setSimilarOpen(false);
+    setSimilar(SIMILAR_IDLE);
+    setConsentOpen(false);
   }
 
   // 목록은 렌더마다 새로 만들어지므로, 의존성에는 글자로 이은 값을 쓴다
@@ -159,62 +171,92 @@ export function ReelGrid({
     return () => observer.disconnect();
   }, [loadMore]);
 
-  const similarGrid = (
+  // 버튼을 누를 때 불러온다. 동의가 필요하면 동의 창을 연다. 방금 동의했으면 벡터를 만드는 중일 수 있어 안내가 다르다
+  const loadSimilar = async (justEnabled = false) => {
+    if (!search) return;
+    setSimilar({ status: "loading", items: [] });
+    try {
+      const r = await getSimilarReels({ query: search, categoryIds: categoryKey ? categoryKey.split(",") : [], source });
+      if (r.needsConsent) {
+        setSimilar(SIMILAR_IDLE);
+        setConsentOpen(true);
+        return;
+      }
+      if (r.limited) setSimilar({ status: "done", items: [], note: QUOTA_MESSAGE });
+      // 방금 켰는데 아직 준비 중이면 안내와 함께 버튼을 다시 보여 준다(다시 누르면 저장해 둔 검색어 벡터를 써서 사용량이 다시 빠지지 않는다)
+      else if (r.items.length === 0 && justEnabled) setSimilar({ status: "idle", items: [], note: SIMILAR_PREPARING });
+      else setSimilar({ status: "done", items: r.items, note: r.items.length ? undefined : SIMILAR_EMPTY });
+    } catch {
+      setSimilar({ status: "done", items: [], note: SIMILAR_EMPTY });
+    }
+  };
+
+  const gridOf = (list: ReelWithRelations[]) => (
     <div className="grid grid-cols-2 gap-3.5">
-      {similarReels.map((reel) => (
+      {list.map((reel) => (
         <ReelCard key={reel.id} reel={reel} />
       ))}
     </div>
   );
 
-  // 상황 1: 낱말 결과가 없으면 비슷한 릴스가 주 목록이 된다
-  if (reels.length === 0 && similarReels.length > 0 && search) {
-    return (
-      <div className="px-6 pb-6">
-        <p className="mb-3 text-sm text-gray-400">{NO_KEYWORD_MATCH_NOTE}</p>
-        {similarGrid}
-      </div>
-    );
-  }
-
-  // 상황 2: 낱말 결과를 끝까지 불러온 뒤 맨 아래에 버튼 하나. 누르면 버튼이 사라지고 펼쳐진다.
-  // 결과 수와 상관없이 늘 같은 테두리 버튼(보조 행동). 결과 수로 모양을 바꿀 근거가 없어서(2026-11-25 사용자 결정).
-  const quotaNote = similarLimited && !cursor && (
-    <p className="px-6 pb-6 text-center text-xs text-gray-500">{DEMO_QUOTA_MESSAGE}</p>
-  );
-
-  const similarSection = !cursor && similarReels.length > 0 && (
+  // 낱말 결과를 끝까지 불러온 뒤(0개면 안내 문구 아래) 버튼 하나. 누르면 불러와서 버튼 자리에 펼친다.
+  // 개수는 누르기 전에 알 수 없어 표시하지 않는다. 늘 같은 테두리 버튼(보조 행동, 2026-11-25 사용자 결정).
+  // 0개일 때도 자동으로 불러오지 않는다(2026-11-27 사용자 결정: 두 상황을 같은 버튼으로 통일, 사용량은 누를 때만 빠짐)
+  const showSimilarButton = Boolean(search) && !cursor && canLoadSimilar;
+  const similarSection = showSimilarButton && (
     <section className="px-6 pb-6">
-      {similarOpen ? (
-        similarGrid
+      {similar.status === "done" ? (
+        similar.note ? (
+          <p className="text-center text-sm text-gray-500">{similar.note}</p>
+        ) : (
+          gridOf(similar.items)
+        )
       ) : (
-        <button
-          type="button"
-          onClick={() => setSimilarOpen(true)}
-          className="flex h-12 w-full items-center justify-center gap-1 rounded-xl border border-gray-700 text-sm text-purple-200"
-        >
-          {SIMILAR_MORE_BUTTON} ({similarReels.length})
-          <ChevronDown size={16} aria-hidden />
-        </button>
+        <>
+          {similar.note && <p className="mb-3 text-center text-sm text-gray-500">{similar.note}</p>}
+          <button
+            type="button"
+            onClick={() => loadSimilar()}
+            disabled={similar.status === "loading"}
+            className="flex h-12 w-full items-center justify-center gap-1 rounded-xl border border-gray-700 text-sm text-purple-200 disabled:opacity-60"
+          >
+            {similar.status === "loading" ? SIMILAR_LOADING : SIMILAR_MORE_BUTTON}
+          </button>
+        </>
       )}
     </section>
   );
 
+  const consentSheet = (
+    <AiConsentSheet
+      open={consentOpen}
+      onClose={() => setConsentOpen(false)}
+      onEnabled={() => {
+        setConsentOpen(false);
+        void loadSimilar(true);
+      }}
+    />
+  );
+
   if (reels.length === 0) {
     const hasFilters = Boolean(search || categoryIds.length > 0 || status);
+    // 검색어만으로 검색했으면 "검색어가 포함된" 안내. 카테고리나 출처도 골랐으면 그 조건 때문일 수 있어 "조건에 맞는"
+    const searchOnly = Boolean(search) && categoryIds.length === 0 && !source && !status;
     return (
       <>
-        <div className="px-6 py-12 text-center text-gray-500 text-sm">
-          {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
+        {/* 아래에 버튼이 붙을 때: 위 10px, 아래 16px, 왼쪽 정렬(2026-11-27 사용자 지정). 빈 화면만 있을 때는 기존 그대로 */}
+        <div className={`px-6 text-gray-500 text-sm ${showSimilarButton ? "pt-[10px] pb-4 text-left" : "py-12 text-center"}`}>
+          {searchOnly ? NO_KEYWORD_RESULT : hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
         </div>
-        {quotaNote}
+        {similarSection}
+        {consentSheet}
       </>
     );
   }
 
   return (
     <>
-      <div className={similarReels.length > 0 && !cursor ? "px-6 pb-3" : "px-6 pb-6"}>
+      <div className={showSimilarButton ? "px-6 pb-3" : "px-6 pb-6"}>
         <div className="grid grid-cols-2 gap-3.5">
           {reels.map((reel, index) => (
             <ReelCard key={reel.id} reel={reel} priority={index < 2} />
@@ -227,7 +269,7 @@ export function ReelGrid({
         )}
       </div>
       {similarSection}
-      {quotaNote}
+      {consentSheet}
     </>
   );
 }
