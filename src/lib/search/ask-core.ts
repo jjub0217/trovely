@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/db";
-import { generateJson } from "@/lib/ai/gemini";
+import { generateJson, type GenerateOptions } from "@/lib/ai/gemini";
+
+/** AI에게 물어보기는 기다리는 화면이라 생각 단계를 low로(2026-11-27 측정: 평균 18.3초 → 8.2초, 답의 질 비슷) */
+const ASK_GENERATE_OPTIONS: GenerateOptions = { thinkingLevel: "low" };
 import { semanticReelIds } from "./semantic";
 import { demoSemanticIds } from "./demo-search";
 import { getMockReel } from "@/lib/mocks/portal";
@@ -20,7 +23,7 @@ import {
 
 /** 질문 읽기: AI가 질문에서 조건을 뽑는다(화면의 서버 액션과 측정 스크립트가 함께 쓴다) */
 export async function readChips(question: string): Promise<AskChip[]> {
-  return validateChips(await generateJson(buildReadPrompt(question), READ_SCHEMA));
+  return validateChips(await generateJson(buildReadPrompt(question), READ_SCHEMA, ASK_GENERATE_OPTIONS));
 }
 
 type ReelForAnswer = {
@@ -63,6 +66,7 @@ async function answerFrom<T extends ReelForAnswer>(
       })),
     ),
     ANSWER_SCHEMA,
+    ASK_GENERATE_OPTIONS,
   );
   const answer = validateAnswer(raw, contextIds);
   const sources = "notFound" in answer ? [] : orderByIds(reels, answer.usedIds);

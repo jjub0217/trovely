@@ -36,8 +36,10 @@ export function ReelCard({ reel, priority = false }: { reel: ReelWithRelations; 
   const backUrl = query ? `${pathname}?${query}` : pathname;
   const detailHref = `/reels/${reel.id}?back=${encodeURIComponent(backUrl)}`;
 
+  // prefetch 끔: 화면에 보이는 카드마다 상세 화면을 미리 받으면 스크롤 중 요청이 몰려 썸네일이 늦게 뜬다
+  // (2026-11-27 운영 측정: 카드 30개에 미리 받기 125번). 대신 상세 화면을 처음 열 때 조금 늦을 수 있다
   return (
-    <Link href={detailHref} onClick={handleOpen}>
+    <Link href={detailHref} onClick={handleOpen} prefetch={false}>
       <div
         data-reel-id={reel.id}
         className="bg-gray-800 rounded-xl overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors"
