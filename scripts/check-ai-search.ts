@@ -241,8 +241,9 @@ async function queryChecks() {
     expectEqual(f.calls.length, 1, "embed 호출");
     const usage = await prisma.aiUsageUser.findFirst({ where: { userId: uid("q1"), kind: "query" } });
     expectEqual(usage?.count, 1, "사용량");
-    const first = JSON.stringify(results[0]);
-    expectEqual(results.every((r) => "vector" in r && JSON.stringify(r) === first), true, "같은 벡터");
+    const vectors = results.map((r) => ("vector" in r ? JSON.stringify(r.vector) : null));
+    expectEqual(vectors.every((v) => v !== null && v === vectors[0]), true, "같은 벡터");
+    expectEqual(results.filter((r) => "fresh" in r).length, 1, "새로 만든 요청 수");
   });
 
   await check("다른 사람 같은 검색어 → 캐시 따로", async () => {
@@ -301,6 +302,16 @@ async function queryChecks() {
     process.env.AI_SEARCH_PUBLIC = "true";
     expectEqual(r, { items: [] }, "결과");
     expectEqual(f.calls.length, 0, "embed 호출");
+  });
+
+  await check("남은 게시물 이어서 만들기: 처음 보는 검색어일 때만 1번, 같은 검색어 다시는 0번", async () => {
+    const u = uid("q9");
+    await consent(u);
+    const called: string[] = [];
+    const catchUp = (id: string) => void called.push(id);
+    await findSimilarForMember(u, "이어서", {}, { embed: fakeEmbed().embed, catchUp });
+    await findSimilarForMember(u, "이어서", {}, { embed: fakeEmbed().embed, catchUp });
+    expectEqual(called, [u], "이어서 만들기 호출");
   });
 
   await check("남의 게시물 안 나옴, 키워드 결과와 겹치는 것 빠짐, 카테고리 두 개 AND", async () => {

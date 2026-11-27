@@ -9,7 +9,8 @@ import { consumeAiQuota } from "./usage";
 const defaultEmbed: EmbedFn = (texts) => embedTexts(texts, "RETRIEVAL_QUERY", { retries: 0, timeoutMs: 3000 });
 const POLL_MS = 200;
 
-export type QueryVectorResult = { vector: number[] } | { limited: true } | { unavailable: true };
+/** fresh = 이번 요청에서 Gemini를 불러 새로 만들었음(저장해 둔 벡터를 쓴 경우는 없음) */
+export type QueryVectorResult = { vector: number[]; fresh?: true } | { limited: true } | { unavailable: true };
 
 /**
  * 검색어 벡터를 돌려준다. 같은 날 같은 사람이 같은 검색어를 다시 쓰면 저장해 둔 벡터를 쓴다(Gemini를 다시 부르지 않음).
@@ -53,7 +54,7 @@ export async function getQueryVector(
       await prisma.$executeRaw`
         UPDATE "QueryEmbeddingCache" SET "embedding" = ${vec}::vector
         WHERE "userId" = ${userId} AND "day" = ${day} AND "model" = ${model} AND "textHash" = ${textHash}`;
-      return { vector: values };
+      return { vector: values, fresh: true };
     } catch (e) {
       await removePlaceholder();
       throw e;

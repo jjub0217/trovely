@@ -4,21 +4,14 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { revokeAiSearchAction, retryAiSearchAction } from "@/lib/ai-search/actions";
+import { revokeAiSearchAction } from "@/lib/ai-search/actions";
 import { AiConsentSheet } from "./ai-consent-sheet";
 
-/** AI 검색 설정: 켜기와 끄기, 준비 상태, 다시 시도 */
-export function AiSearchSettings({
-  enabled,
-  total,
-  pending,
-  admin,
-}: {
-  enabled: boolean;
-  total: number;
-  pending: number;
-  admin: boolean;
-}) {
+/**
+ * AI 검색 설정: 켜기와 끄기만. 게시물 준비 상태는 보여 주지 않는다(사용자는 켜졌는지만 알면 된다, 2026-11-27 사용자 결정).
+ * 처음 켤 때 일부 게시물이 실패해도 처음 보는 검색어로 검색할 때 자동으로 이어서 만든다.
+ */
+export function AiSearchSettings({ enabled, admin }: { enabled: boolean; admin: boolean }) {
   const router = useRouter();
   const [consentOpen, setConsentOpen] = useState(false);
   const [confirmOff, setConfirmOff] = useState(false);
@@ -36,8 +29,6 @@ export function AiSearchSettings({
       }
     });
 
-  const status = !enabled ? null : pending > 0 ? `준비 중: ${pending}개 남음` : "준비 완료";
-
   return (
     <div className="px-6 py-4">
       <div className="mb-6 flex items-center gap-2">
@@ -48,7 +39,7 @@ export function AiSearchSettings({
       </div>
 
       {admin ? (
-        <p className="text-sm text-gray-400">관리자 계정은 동의 없이 AI 검색을 써요. 게시물 {total}개 중 {pending}개가 준비 중이에요.</p>
+        <p className="text-sm text-gray-400">관리자 계정은 동의 없이 AI 검색을 써요.</p>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between rounded-xl bg-gray-800 p-4">
@@ -65,7 +56,7 @@ export function AiSearchSettings({
               onClick={() => (enabled ? setConfirmOff(true) : setConsentOpen(true))}
               className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${enabled ? "bg-purple-600" : "bg-gray-600"} disabled:opacity-60`}
             >
-              <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
+              <span className={`absolute left-0 top-1 h-5 w-5 rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
             </button>
           </div>
 
@@ -90,22 +81,6 @@ export function AiSearchSettings({
               </div>
             </div>
           )}
-
-          {status && (
-            <div className="flex items-center justify-between text-sm text-gray-400">
-              <span>{status}</span>
-              {pending > 0 && (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => run(retryAiSearchAction, "다시 시도하고 있어요. 잠시 뒤 새로 고쳐 확인해 주세요.")}
-                  className="text-purple-300 underline underline-offset-2 disabled:opacity-60"
-                >
-                  다시 시도
-                </button>
-              )}
-            </div>
-          )}
         </div>
       )}
 
@@ -120,7 +95,7 @@ export function AiSearchSettings({
         onClose={() => setConsentOpen(false)}
         onEnabled={() => {
           setConsentOpen(false);
-          setMessage("AI 검색을 켰어요. 게시물을 준비하고 있어요.");
+          setMessage(null);
           router.refresh();
         }}
       />

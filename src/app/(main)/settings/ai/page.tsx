@@ -13,6 +13,6 @@ export default async function AiSearchSettingsPage() {
   const userId = await requireAuth();
   const admin = await isAdmin();
   if (!admin && !isAiSearchPublic()) redirect("/");
-  const status = await getAiSearchStatus(userId);
-  return <AiSearchSettings {...status} admin={admin} />;
+  const { enabled } = await getAiSearchStatus(userId);
+  return <AiSearchSettings enabled={enabled} admin={admin} />;
 }

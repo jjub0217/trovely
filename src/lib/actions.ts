@@ -7,6 +7,7 @@ import type { ReelWithRelations } from "@/types";
 import { refreshEmbeddingsAfterResponse } from "./search/embedding-refresh";
 import { semanticReels } from "./search/semantic";
 import { findSimilarForMember } from "./ai-search/similar";
+import { buildAllAfterResponse } from "./ai-search/catch-up";
 import { buildKeywordWhere } from "./search/keyword-where";
 import { similarExtras } from "./search/merge";
 import { normalizeCategoryIds } from "./search/category-selection";
@@ -291,7 +292,7 @@ export async function getSimilarReels({
   }
   const userId = await requireAuth();
   // 일반 가입자: 공개 스위치가 켜지고 본인이 동의한 경우만 Gemini를 부른다(하루 사용량 안에서, 같은 검색어는 다시 쓰기)
-  if (!(await isAdmin())) return findSimilarForMember(userId, q, { categoryIds, source });
+  if (!(await isAdmin())) return findSimilarForMember(userId, q, { categoryIds, source }, { catchUp: buildAllAfterResponse });
   // 관리자: 지금까지와 같다(운영자 본인이라 사용량을 세지 않는다)
   const [semantic, keywordIds] = await Promise.all([
     semanticReels(userId, q, { categoryIds, source }, undefined, { fast: true }),

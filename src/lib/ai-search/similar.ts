@@ -22,7 +22,7 @@ export async function findSimilarForMember(
   userId: string,
   query: string,
   filter: Pick<SemanticFilter, "categoryIds" | "source">,
-  options: { embed?: EmbedFn } = {},
+  options: { embed?: EmbedFn; catchUp?: (userId: string) => void } = {},
 ): Promise<SimilarResult> {
   if (!(await canUseAiSearch(userId))) {
     return isAiSearchPublic() ? { items: [], needsConsent: true } : { items: [] };
@@ -30,6 +30,8 @@ export async function findSimilarForMember(
   const result = await getQueryVector(userId, query, { embed: options.embed });
   if ("limited" in result) return { items: [], limited: true };
   if ("unavailable" in result) return { items: [] };
+  // 처음 보는 검색어(하루 최대 30번)일 때 남은 게시물을 응답 뒤에 이어서 만든다. 이미 만든 게시물은 건너뛰어 평소엔 보내는 게 없다
+  if (result.fresh) options.catchUp?.(userId);
 
   const [ids, keywordIds] = await Promise.all([
     semanticReelIdsByVector(userId, result.vector, filter),
