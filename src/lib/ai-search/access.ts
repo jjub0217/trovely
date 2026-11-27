@@ -119,3 +119,14 @@ export async function getAiSearchStatus(userId: string): Promise<{ enabled: bool
   ).length;
   return { enabled: Boolean(consent?.enabled), total: reels.length, pending };
 }
+
+/**
+ * 회원탈퇴 때(탈퇴 트랜잭션 안에서) 그 사람의 AI 검색 기록을 지운다: 동의 상태, 동의 이력, 검색어 캐시, 가입자별 사용량.
+ * 서비스 전체 사용량은 누구 것인지 알 수 없는 합계라 남긴다. 게시물 벡터는 게시물을 지우면 함께 지워진다.
+ */
+export async function deleteAiSearchData(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+  await tx.aiSearchConsent.deleteMany({ where: { userId } });
+  await tx.aiSearchConsentLog.deleteMany({ where: { userId } });
+  await tx.queryEmbeddingCache.deleteMany({ where: { userId } });
+  await tx.aiUsageUser.deleteMany({ where: { userId } });
+}

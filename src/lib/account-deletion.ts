@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { unlinkKakaoUser } from "@/lib/kakao";
+import { deleteAiSearchData } from "@/lib/ai-search/access";
 
 export const WITHDRAWAL_REASONS = [
   "SERVICE_DISSATISFACTION",
@@ -43,6 +44,8 @@ export async function deleteAccountData(userId: string, reason: string): Promise
         await tx.adminRole.deleteMany({ where: { userId } });
         // 인스타그램 가져오기 중간 기록(후보의 캡션, 컬렉션 이름)도 지운다. 후보는 배치를 지우면 함께 지워진다.
         await tx.importBatch.deleteMany({ where: { userId } });
+        // AI 검색 동의 기록, 검색어 캐시, 가입자별 사용량(게시물 벡터는 위 게시물 삭제와 함께 지워진다)
+        await deleteAiSearchData(tx, userId);
         await tx.withdrawal.create({ data: { reason } });
 
         // 마지막에 로그인 계정을 지운다. 실패하면 위의 삭제가 모두 되돌려진다.

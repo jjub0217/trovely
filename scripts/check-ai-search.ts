@@ -4,7 +4,7 @@
 import { prisma } from "../src/lib/db";
 import { consumeAiQuota, type UsageDb } from "../src/lib/ai-search/usage";
 import { koreaDate } from "../src/lib/demo/usage";
-import { enableAiSearch, revokeAiSearch, getAiSearchStatus } from "../src/lib/ai-search/access";
+import { enableAiSearch, revokeAiSearch, getAiSearchStatus, deleteAiSearchData } from "../src/lib/ai-search/access";
 import { AI_SEARCH_POLICY_VERSION } from "../src/lib/ai-search/limits";
 import { upsertReelEmbeddings, type EmbedFn } from "../src/lib/search/embeddings";
 import { getQueryVector } from "../src/lib/ai-search/query-vector";
@@ -325,12 +325,37 @@ async function queryChecks() {
   delete process.env.AI_SEARCH_PUBLIC;
 }
 
+async function withdrawalChecks() {
+  process.env.AI_SEARCH_PUBLIC = "true";
+  await check("탈퇴 삭제: 동의, 이력, 캐시, 가입자별 사용량 0줄, 전체 사용량은 그대로", async () => {
+    const u = uid("w1");
+    await consent(u);
+    await revokeAiSearch(u);
+    await consent(u);
+    await getQueryVector(u, "탈퇴 검색어", { embed: fakeEmbed().embed });
+    const day = koreaDate(new Date());
+    const totalBefore = (await prisma.aiUsageTotal.findUnique({ where: { day_kind: { day, kind: "query" } } }))?.count;
+    await prisma.$transaction((tx) => deleteAiSearchData(tx, u));
+    const counts = await Promise.all([
+      prisma.aiSearchConsent.count({ where: { userId: u } }),
+      prisma.aiSearchConsentLog.count({ where: { userId: u } }),
+      prisma.queryEmbeddingCache.count({ where: { userId: u } }),
+      prisma.aiUsageUser.count({ where: { userId: u } }),
+    ]);
+    expectEqual(counts, [0, 0, 0, 0], "남은 줄");
+    const totalAfter = (await prisma.aiUsageTotal.findUnique({ where: { day_kind: { day, kind: "query" } } }))?.count;
+    expectEqual(totalAfter, totalBefore, "전체 사용량");
+  });
+  delete process.env.AI_SEARCH_PUBLIC;
+}
+
 async function main() {
   await cleanup();
   try {
     await usageChecks();
     await embeddingChecks();
     await queryChecks();
+    await withdrawalChecks();
   } finally {
     await cleanup();
     await prisma.$disconnect();
