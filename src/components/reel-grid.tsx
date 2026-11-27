@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { SearchX } from "lucide-react";
 import { ReelCard } from "./reel-card";
 import { getReels, getSimilarReels } from "@/lib/actions";
 import { ReelWithRelations } from "@/types";
@@ -239,16 +238,9 @@ export function ReelGrid({
     const searchOnly = Boolean(search) && categoryIds.length === 0 && !source && !status;
     return (
       <>
-        {searchOnly ? (
-          <div className="flex flex-col items-center gap-3 px-6 py-12 text-center text-sm text-gray-300">
-            <SearchX size={28} className="text-gray-500" aria-hidden />
-            <p>{NO_KEYWORD_RESULT}</p>
-          </div>
-        ) : (
-          <div className="px-6 py-12 text-center text-gray-500 text-sm">
-            {hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
-          </div>
-        )}
+        <div className="px-6 py-12 text-center text-gray-500 text-sm">
+          {searchOnly ? NO_KEYWORD_RESULT : hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
+        </div>
         {similarSection}
         {consentSheet}
       </>
