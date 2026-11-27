@@ -7,6 +7,8 @@ import { koreaDate } from "../src/lib/demo/usage";
 import { enableAiSearch, revokeAiSearch, getAiSearchStatus } from "../src/lib/ai-search/access";
 import { AI_SEARCH_POLICY_VERSION } from "../src/lib/ai-search/limits";
 import { upsertReelEmbeddings, type EmbedFn } from "../src/lib/search/embeddings";
+import { getQueryVector } from "../src/lib/ai-search/query-vector";
+import { findSimilarForMember } from "../src/lib/ai-search/similar";
 
 const url = process.env.DATABASE_URL ?? "";
 if (!url.includes("127.0.0.1") && !url.includes("localhost")) {
@@ -229,11 +231,106 @@ async function embeddingChecks() {
   delete process.env.AI_SEARCH_PUBLIC;
 }
 
+async function queryChecks() {
+  process.env.AI_SEARCH_PUBLIC = "true";
+
+  await check("같은 검색어 동시 5번 → embed 1번, 사용량 1, 모두 같은 벡터", async () => {
+    await consent(uid("q1"));
+    const f = fakeEmbed();
+    const results = await Promise.all(Array.from({ length: 5 }, () => getQueryVector(uid("q1"), "파주 카페", { embed: f.embed })));
+    expectEqual(f.calls.length, 1, "embed 호출");
+    const usage = await prisma.aiUsageUser.findFirst({ where: { userId: uid("q1"), kind: "query" } });
+    expectEqual(usage?.count, 1, "사용량");
+    const first = JSON.stringify(results[0]);
+    expectEqual(results.every((r) => "vector" in r && JSON.stringify(r) === first), true, "같은 벡터");
+  });
+
+  await check("다른 사람 같은 검색어 → 캐시 따로", async () => {
+    await consent(uid("q2"));
+    const f = fakeEmbed();
+    await getQueryVector(uid("q2"), "파주 카페", { embed: f.embed });
+    expectEqual(f.calls.length, 1, "embed 호출");
+  });
+
+  await check("캐시 표에 검색어 원문 없음", async () => {
+    const rows = await prisma.$queryRaw<{ t: string }[]>`
+      SELECT row_to_json(c)::text AS t FROM "QueryEmbeddingCache" c WHERE "userId" LIKE ${PREFIX + "%"}`;
+    expectEqual(rows.length > 0, true, "줄 있음");
+    expectEqual(rows.some((r) => r.t.includes("파주")), false, "원문 포함");
+  });
+
+  await check("embed 실패 → 만드는 중 줄이 지워져 다음 요청이 다시 만든다", async () => {
+    await consent(uid("q3"));
+    const failing: EmbedFn = async () => { throw new Error("시험 실패"); };
+    const r1 = await getQueryVector(uid("q3"), "실패 검색어", { embed: failing });
+    expectEqual("unavailable" in r1, true, "첫 요청");
+    const f = fakeEmbed();
+    const r2 = await getQueryVector(uid("q3"), "실패 검색어", { embed: f.embed });
+    expectEqual("vector" in r2 && f.calls.length === 1, true, "다시 만듦");
+  });
+
+  await check("상한 30 소진 뒤 → limited, embed 호출 없음", async () => {
+    await consent(uid("q4"));
+    await prisma.aiUsageUser.create({ data: { userId: uid("q4"), day: koreaDate(new Date()), kind: "query", count: 30 } });
+    const f = fakeEmbed();
+    const r = await getQueryVector(uid("q4"), "새 검색어", { embed: f.embed });
+    expectEqual(r, { limited: true }, "결과");
+    expectEqual(f.calls.length, 0, "embed 호출");
+    expectEqual(await prisma.queryEmbeddingCache.count({ where: { userId: uid("q4") } }), 0, "남은 줄");
+  });
+
+  await check("지난 날짜 줄은 그 사람 검색 때 지워짐", async () => {
+    await consent(uid("q5"));
+    await prisma.$executeRaw`
+      INSERT INTO "QueryEmbeddingCache" ("userId","day","model","textHash") VALUES (${uid("q5")}, '2000-01-01', 'm', 'h')`;
+    await getQueryVector(uid("q5"), "오늘 검색어", { embed: fakeEmbed().embed });
+    expectEqual(await prisma.queryEmbeddingCache.count({ where: { userId: uid("q5"), day: "2000-01-01" } }), 0, "지난 줄");
+  });
+
+  await check("동의 안 한 사람: findSimilarForMember → needsConsent, embed 0번", async () => {
+    const f = fakeEmbed();
+    const r = await findSimilarForMember(uid("q6"), "파주", {}, { embed: f.embed });
+    expectEqual(r, { items: [], needsConsent: true }, "결과");
+    expectEqual(f.calls.length, 0, "embed 호출");
+  });
+
+  await check("공개 스위치 꺼짐: needsConsent 없이 빈 결과, embed 0번", async () => {
+    delete process.env.AI_SEARCH_PUBLIC;
+    const f = fakeEmbed();
+    const r = await findSimilarForMember(uid("q1"), "파주", {}, { embed: f.embed });
+    process.env.AI_SEARCH_PUBLIC = "true";
+    expectEqual(r, { items: [] }, "결과");
+    expectEqual(f.calls.length, 0, "embed 호출");
+  });
+
+  await check("남의 게시물 안 나옴, 키워드 결과와 겹치는 것 빠짐, 카테고리 두 개 AND", async () => {
+    const me = uid("q7");
+    const other = uid("q8");
+    await consent(me);
+    await consent(other);
+    const [c1, c2] = await Promise.all([
+      prisma.category.create({ data: { userId: me, name: "데이트" } }),
+      prisma.category.create({ data: { userId: me, name: "파주" } }),
+    ]);
+    const both = await prisma.reel.create({ data: { userId: me, url: "https://example.com/q7/both", caption: "조용한 찻집", categories: { create: [{ categoryId: c1.id }, { categoryId: c2.id }] } } });
+    const one = await prisma.reel.create({ data: { userId: me, url: "https://example.com/q7/one", caption: "조용한 찻집 둘", categories: { create: [{ categoryId: c1.id }] } } });
+    const keyword = await prisma.reel.create({ data: { userId: me, url: "https://example.com/q7/kw", caption: "카페 거리", categories: { create: [{ categoryId: c1.id }, { categoryId: c2.id }] } } });
+    const theirs = await makeReels(other, 1);
+    await upsertReelEmbeddings([both.id, one.id, keyword.id], { embed: fakeEmbed().embed });
+    await upsertReelEmbeddings(theirs, { embed: fakeEmbed().embed });
+    const r = await findSimilarForMember(me, "카페", { categoryIds: [c1.id, c2.id] }, { embed: fakeEmbed().embed });
+    expectEqual(r.items.map((x) => x.id), [both.id], "결과");
+  });
+
+  delete process.env.AI_SEARCH_PUBLIC;
+}
+
 async function main() {
   await cleanup();
   try {
     await usageChecks();
     await embeddingChecks();
+    await queryChecks();
   } finally {
     await cleanup();
     await prisma.$disconnect();

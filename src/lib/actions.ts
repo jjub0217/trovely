@@ -6,6 +6,7 @@ import { extractThumbnail } from "./og";
 import type { ReelWithRelations } from "@/types";
 import { refreshEmbeddingsAfterResponse } from "./search/embedding-refresh";
 import { semanticReels } from "./search/semantic";
+import { findSimilarForMember } from "./ai-search/similar";
 import { buildKeywordWhere } from "./search/keyword-where";
 import { similarExtras } from "./search/merge";
 import { normalizeCategoryIds } from "./search/category-selection";
@@ -272,7 +273,7 @@ export async function getSimilarReels({
   query: string;
   categoryIds?: string[];
   source?: ReelSource;
-}): Promise<{ items: ReelWithRelations[]; limited?: boolean }> {
+}): Promise<{ items: ReelWithRelations[]; limited?: boolean; needsConsent?: boolean }> {
   const q = query.trim();
   const categoryIds = normalizeCategoryIds(rawCategoryIds);
   // 아주 긴 검색어는 벡터로 바꾸지 않는다(사용량을 쓰기 전에 막는다)
@@ -289,8 +290,9 @@ export async function getSimilarReels({
     return { items: items as unknown as ReelWithRelations[] };
   }
   const userId = await requireAuth();
-  // 운영에서는 관리자 게시물만 벡터가 있다. 다른 가입자는 검색어를 Gemini로 보내지 않고 키워드 검색만 쓴다.
-  if (!(await isAdmin())) return { items: [] };
+  // 일반 가입자: 공개 스위치가 켜지고 본인이 동의한 경우만 Gemini를 부른다(하루 사용량 안에서, 같은 검색어는 다시 쓰기)
+  if (!(await isAdmin())) return findSimilarForMember(userId, q, { categoryIds, source });
+  // 관리자: 지금까지와 같다(운영자 본인이라 사용량을 세지 않는다)
   const [semantic, keywordIds] = await Promise.all([
     semanticReels(userId, q, { categoryIds, source }, undefined, { fast: true }),
     prisma.reel

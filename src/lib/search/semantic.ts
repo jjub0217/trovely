@@ -24,8 +24,17 @@ export async function semanticReelIds(
 ): Promise<string[]> {
   // 홈 화면 검색은 빨라야 해서 다시 시도하지 않고 3초 안에 끝낸다(실패하면 낱말 결과만 보인다)
   const [values] = await embedTexts([query], "RETRIEVAL_QUERY", options?.fast ? { retries: 0, timeoutMs: 3000 } : undefined);
-  const vec = toVectorLiteral(values, EMBEDDING_DIM);
+  return semanticReelIdsByVector(userId, values, filter, take);
+}
 
+/** 이미 만든 검색어 벡터로, 그 사람 게시물 중 뜻이 가까운 순서의 id(필터 안에서 상위 take개) */
+export async function semanticReelIdsByVector(
+  userId: string,
+  values: number[],
+  filter: SemanticFilter = {},
+  take = SEMANTIC_TAKE,
+): Promise<string[]> {
+  const vec = toVectorLiteral(values, EMBEDDING_DIM);
   const conds: Prisma.Sql[] = [Prisma.sql`r."userId" = ${userId}`];
   if (filter.source) conds.push(Prisma.sql`r."source" = ${filter.source}::"ReelSource"`);
   const categoryIds = filter.categoryIds ?? [];
@@ -59,6 +68,11 @@ export async function semanticReels(
   options?: { fast?: boolean },
 ) {
   const ids = await semanticReelIds(userId, query, filter, take, options);
+  return reelsByIds(userId, ids);
+}
+
+/** id 목록을 그 순서대로 목록 카드 모양으로(그 사람 게시물만) */
+export async function reelsByIds(userId: string, ids: string[]) {
   if (ids.length === 0) return [];
   const reels = await prisma.reel.findMany({
     where: { id: { in: ids }, userId },
