@@ -243,8 +243,8 @@ export function ReelGrid({
     const searchOnly = Boolean(search) && categoryIds.length === 0 && !source && !status;
     return (
       <>
-        {/* 아래에 버튼이 붙으면 위 여백을 줄인다(빈 화면만 있을 때는 기존 여백 그대로) */}
-        <div className={`px-6 text-center text-gray-500 text-sm ${showSimilarButton ? "pt-6 pb-4" : "py-12"}`}>
+        {/* 아래에 버튼이 붙으면 위 여백만 줄인다(2026-11-27 사용자 요청). 아래 여백은 기존 그대로 */}
+        <div className={`px-6 text-center text-gray-500 text-sm ${showSimilarButton ? "pt-6 pb-12" : "py-12"}`}>
           {searchOnly ? NO_KEYWORD_RESULT : hasFilters ? "조건에 맞는 콘텐츠가 없습니다" : "저장된 콘텐츠가 없습니다"}
         </div>
         {similarSection}
