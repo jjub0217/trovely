@@ -24,3 +24,13 @@ test("retryDelays: 기본은 1, 2, 4, 8초, 빠른 요청은 다시 시도하지
   assert.deepEqual(retryDelays(), [1000, 2000, 4000, 8000]);
   assert.deepEqual(retryDelays(0), []);
 });
+
+import { buildGenerateBody } from "./gemini";
+
+test("buildGenerateBody: 생각 단계를 주면 thinkingConfig를 넣고, 안 주면 넣지 않는다", () => {
+  const low = buildGenerateBody("질문", { type: "OBJECT" }, { thinkingLevel: "low" }) as { generationConfig: Record<string, unknown> };
+  assert.deepEqual(low.generationConfig.thinkingConfig, { thinkingLevel: "low" });
+  assert.equal(low.generationConfig.responseMimeType, "application/json");
+  const plain = buildGenerateBody("질문", { type: "OBJECT" }) as { generationConfig: Record<string, unknown> };
+  assert.equal("thinkingConfig" in plain.generationConfig, false);
+});

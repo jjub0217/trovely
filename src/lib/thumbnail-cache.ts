@@ -62,7 +62,8 @@ export async function cacheThumbnail(
       const supabase = getClient();
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
-        .upload(path, buffer, { contentType, upsert: true });
+        // 브라우저가 1년 보관(기본 1시간). 같은 경로로 다시 올리면 화면이 주소 뒤에 ?v=를 붙여 새로 받는다
+        .upload(path, buffer, { contentType, upsert: true, cacheControl: "31536000" });
 
       if (uploadError) throw new Error(uploadError.message);
 

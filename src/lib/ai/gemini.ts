@@ -83,11 +83,30 @@ export async function embedTexts(texts: string[], taskType: EmbedTaskType, optio
   return out;
 }
 
-export async function generateJson<T>(prompt: string, responseSchema: object): Promise<T> {
-  const data = (await postJson(`models/${TEXT_MODEL}:generateContent`, {
+/**
+ * 답하기 전에 속으로 생각하는 단계의 양. gemini-3.8-flash는 기본 medium이고 low까지 낮출 수 있다
+ * (https://aistudio.google.com/docs/thinking). 2026-11-27 측정: AI에게 물어보기 5문항 평균 18.3초 → low 8.2초, 답의 질 비슷
+ */
+export type ThinkingLevel = "low" | "medium" | "high";
+export type GenerateOptions = { thinkingLevel?: ThinkingLevel };
+
+export function buildGenerateBody(prompt: string, responseSchema: object, options: GenerateOptions = {}): object {
+  return {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { responseMimeType: "application/json", responseSchema, temperature: 0.2 },
-  })) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema,
+      temperature: 0.2,
+      ...(options.thinkingLevel ? { thinkingConfig: { thinkingLevel: options.thinkingLevel } } : {}),
+    },
+  };
+}
+
+export async function generateJson<T>(prompt: string, responseSchema: object, options: GenerateOptions = {}): Promise<T> {
+  const data = (await postJson(
+    `models/${TEXT_MODEL}:generateContent`,
+    buildGenerateBody(prompt, responseSchema, options),
+  )) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
   const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
   return JSON.parse(text) as T;
 }

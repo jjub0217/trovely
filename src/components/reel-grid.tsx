@@ -152,7 +152,8 @@ export function ReelGrid({
           loadMore();
         }
       },
-      { threshold: 0.1 }
+      // 목록 끝에 닿기 800px 전부터 다음 쪽을 불러온다(끝에 닿은 뒤 빈 칸이 생기지 않게)
+      { threshold: 0, rootMargin: "800px 0px" }
     );
     if (observerRef.current) observer.observe(observerRef.current);
     return () => observer.disconnect();
