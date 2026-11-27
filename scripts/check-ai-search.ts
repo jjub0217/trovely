@@ -7,6 +7,7 @@ import { koreaDate } from "../src/lib/demo/usage";
 import { enableAiSearch, revokeAiSearch, getAiSearchStatus, deleteAiSearchData } from "../src/lib/ai-search/access";
 import { AI_SEARCH_POLICY_VERSION } from "../src/lib/ai-search/limits";
 import { upsertReelEmbeddings, type EmbedFn } from "../src/lib/search/embeddings";
+import { buildAllForUser } from "../src/lib/ai-search/build";
 import { getQueryVector } from "../src/lib/ai-search/query-vector";
 import { findSimilarForMember } from "../src/lib/ai-search/similar";
 
@@ -56,7 +57,7 @@ async function usageChecks() {
     const results = await Promise.all(
       Array.from({ length: 40 }, () => consumeAiQuota(uid("u1"), "query", 1, { now: day })),
     );
-    expectEqual(results.reduce((a, b) => a + b, 0), 30, "허락 합계");
+    expectEqual(results.reduce<number>((sum, n) => sum + (n ?? 0), 0), 30, "허락 합계");
     const row = await prisma.aiUsageUser.findUnique({ where: { userId_day_kind: { userId: uid("u1"), day: dayKey, kind: "query" } } });
     expectEqual(row?.count, 30, "가입자별 줄");
   });
@@ -71,7 +72,7 @@ async function usageChecks() {
       consumeAiQuota(uid("u2"), "document", 1, { now: day }),
       consumeAiQuota(uid("u3"), "document", 1, { now: day }),
     ]);
-    expectEqual(a + b, 1, "허락 합계");
+    expectEqual((a ?? 0) + (b ?? 0), 1, "허락 합계");
   });
 
   await check("document 부분 허락: 가입자별 남은 양 5일 때 100 요청 → 5", async () => {
@@ -80,9 +81,9 @@ async function usageChecks() {
     expectEqual(await consumeAiQuota(uid("u4"), "document", 100, { now: day }), 5);
   });
 
-  await check("사용량 DB 오류: $transaction이 실패하는 db → 0, 예외 없음", async () => {
+  await check("사용량 DB 오류: $transaction이 실패하는 db → null(상한 도달 0과 구분), 예외 없음", async () => {
     const broken = { $transaction: async () => { throw new Error("연결 끊김(시험)"); } } as unknown as UsageDb;
-    expectEqual(await consumeAiQuota(uid("u5"), "query", 1, { now: day, db: broken }), 0);
+    expectEqual(await consumeAiQuota(uid("u5"), "query", 1, { now: day, db: broken }), null);
   });
 }
 
@@ -360,6 +361,45 @@ async function withdrawalChecks() {
   delete process.env.AI_SEARCH_PUBLIC;
 }
 
+async function reviewFixChecks() {
+  process.env.AI_SEARCH_PUBLIC = "true";
+
+  await check("철회가 먼저 끝난 뒤 도착한 검색: 캐시 줄 0, embed 0번, 사용량 0", async () => {
+    const u = uid("r1");
+    await consent(u);
+    await revokeAiSearch(u); // canUseAiSearch를 통과한 직후 철회가 커밋된 상황
+    const f = fakeEmbed();
+    const r = await getQueryVector(u, "철회 뒤 검색", { embed: f.embed });
+    expectEqual("unavailable" in r, true, "결과");
+    expectEqual(f.calls.length, 0, "embed 호출");
+    expectEqual(await prisma.queryEmbeddingCache.count({ where: { userId: u } }), 0, "캐시 줄");
+    expectEqual(await prisma.aiUsageUser.count({ where: { userId: u, kind: "query" } }), 0, "사용량 줄");
+  });
+
+  await check("전체 만들기 두 번 동시 실행: 한 번만 돌아 게시물마다 한 번만 보냄", async () => {
+    const u = uid("r2");
+    await makeReels(u, 3);
+    await consent(u);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const f = fakeEmbed(gate);
+    const a = buildAllForUser(u, { embed: f.embed });
+    await new Promise((r) => setTimeout(r, 300));
+    const b = buildAllForUser(u, { embed: f.embed });
+    await new Promise((r) => setTimeout(r, 500)); // 두 번째 실행이 저장된 해시를 읽을 시간(첫 번째는 아직 Gemini 대기 중)
+    release();
+    const [ra, rb] = await Promise.all([a, b]);
+    expectEqual(f.calls.flat().length, 3, "보낸 글 수");
+    expectEqual([ra, rb].filter((x) => x === "skipped").length, 1, "건너뛴 실행 수");
+    const usage = await prisma.aiUsageUser.findFirst({ where: { userId: u, kind: "document" } });
+    expectEqual(usage?.count, 3, "사용량");
+    const after = await buildAllForUser(u, { embed: fakeEmbed().embed });
+    expectEqual(after, "done", "끝난 뒤 다시 실행 가능");
+  });
+
+  delete process.env.AI_SEARCH_PUBLIC;
+}
+
 async function main() {
   await cleanup();
   try {
@@ -367,6 +407,7 @@ async function main() {
     await embeddingChecks();
     await queryChecks();
     await withdrawalChecks();
+    await reviewFixChecks();
   } finally {
     await cleanup();
     await prisma.$disconnect();

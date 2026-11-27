@@ -128,6 +128,8 @@ model AiSearchConsent {
   generation    Int       @default(0)
   consentedAt   DateTime?
   revokedAt     DateTime?
+  // 게시물 전체 만들기가 도는 중이면 끝날 예정 시각(한 사람에게 작업 하나만 돌게 한다)
+  buildingUntil DateTime?
 }
 
 // AI 검색 동의와 철회 이력. 탈퇴하면 지운다

@@ -121,7 +121,8 @@ export async function upsertReelEmbeddings(
         break;
       }
       const wanted = todo.slice(i, i + BATCH);
-      const granted = await consumeAiQuota(owner, "document", wanted.length);
+      // 사용량을 세지 못하면(null) 보내지 않는다
+      const granted = (await consumeAiQuota(owner, "document", wanted.length)) ?? 0;
       const chunk = wanted.slice(0, granted);
       if (chunk.length > 0) {
         const vectors = await embed(chunk.map((t) => t.text));

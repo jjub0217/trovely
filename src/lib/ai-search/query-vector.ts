@@ -35,18 +35,28 @@ export async function getQueryVector(
     const cached = await readVector(userId, day, model, textHash);
     if (cached) return { vector: cached };
 
+    // "만드는 중" 줄은 동의가 켜져 있을 때만 넣는다. 동의 줄에 읽기 잠금을 걸어서, 철회가 진행 중이면 끝난 뒤 다시 판단한다.
+    // 그래서 검색 권한 확인 직후 철회가 끝나도 줄이 남거나 Gemini로 보내지 않는다(철회가 뒤에 오면 철회가 이 줄을 지운다)
     const inserted = await prisma.$executeRaw`
-      INSERT INTO "QueryEmbeddingCache" ("userId", "day", "model", "textHash") VALUES (${userId}, ${day}, ${model}, ${textHash})
+      INSERT INTO "QueryEmbeddingCache" ("userId", "day", "model", "textHash")
+      SELECT ${userId}, ${day}, ${model}, ${textHash}
+      WHERE EXISTS (SELECT 1 FROM "AiSearchConsent" WHERE "userId" = ${userId} AND "enabled" FOR SHARE)
       ON CONFLICT DO NOTHING`;
-    if (inserted === 0) return await waitForVector(userId, day, model, textHash, options.waitMs ?? 3000);
+    if (inserted === 0) {
+      const consent = await prisma.aiSearchConsent.findUnique({ where: { userId }, select: { enabled: true } });
+      if (!consent?.enabled) return { unavailable: true };
+      return await waitForVector(userId, day, model, textHash, options.waitMs ?? 3000);
+    }
 
     const removePlaceholder = () => prisma.$executeRaw`
       DELETE FROM "QueryEmbeddingCache"
       WHERE "userId" = ${userId} AND "day" = ${day} AND "model" = ${model} AND "textHash" = ${textHash} AND "embedding" IS NULL`;
 
-    if ((await consumeAiQuota(userId, "query", 1, { now: options.now })) === 0) {
+    const granted = await consumeAiQuota(userId, "query", 1, { now: options.now });
+    if (granted !== 1) {
       await removePlaceholder();
-      return { limited: true };
+      // 0 = 오늘 상한에 닿음, null = 사용량을 세지 못함(상한 안내를 잘못 보여 주지 않는다)
+      return granted === 0 ? { limited: true } : { unavailable: true };
     }
     try {
       const [values] = await embed([query.trim()]);

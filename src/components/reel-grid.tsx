@@ -182,7 +182,9 @@ export function ReelGrid({
         return;
       }
       if (r.limited) setSimilar({ status: "done", items: [], note: QUOTA_MESSAGE });
-      else setSimilar({ status: "done", items: r.items, note: r.items.length ? undefined : justEnabled ? SIMILAR_PREPARING : SIMILAR_EMPTY });
+      // 방금 켰는데 아직 준비 중이면 안내와 함께 버튼을 다시 보여 준다(다시 누르면 저장해 둔 검색어 벡터를 써서 사용량이 다시 빠지지 않는다)
+      else if (r.items.length === 0 && justEnabled) setSimilar({ status: "idle", items: [], note: SIMILAR_PREPARING });
+      else setSimilar({ status: "done", items: r.items, note: r.items.length ? undefined : SIMILAR_EMPTY });
     } catch {
       setSimilar({ status: "done", items: [], note: SIMILAR_EMPTY });
     }
@@ -209,14 +211,17 @@ export function ReelGrid({
           gridOf(similar.items)
         )
       ) : (
-        <button
-          type="button"
-          onClick={() => loadSimilar()}
-          disabled={similar.status === "loading"}
-          className="flex h-12 w-full items-center justify-center gap-1 rounded-xl border border-gray-700 text-sm text-purple-200 disabled:opacity-60"
-        >
-          {similar.status === "loading" ? SIMILAR_LOADING : SIMILAR_MORE_BUTTON}
-        </button>
+        <>
+          {similar.note && <p className="mb-3 text-center text-sm text-gray-500">{similar.note}</p>}
+          <button
+            type="button"
+            onClick={() => loadSimilar()}
+            disabled={similar.status === "loading"}
+            className="flex h-12 w-full items-center justify-center gap-1 rounded-xl border border-gray-700 text-sm text-purple-200 disabled:opacity-60"
+          >
+            {similar.status === "loading" ? SIMILAR_LOADING : SIMILAR_MORE_BUTTON}
+          </button>
+        </>
       )}
     </section>
   );
