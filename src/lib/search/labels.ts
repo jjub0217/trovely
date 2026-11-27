@@ -24,3 +24,10 @@ export const ASK_INPUT_PLACEHOLDER = "궁금한 점을 입력하세요";
 /** 화면에는 안 보이고 스크린 리더만 읽는 이름 */
 export const ASK_SOURCES_LABEL = "답변에 참고한 콘텐츠";
 export const ASK_CHIPS_LABEL = "AI가 알아들은 조건";
+
+/** 비슷한 콘텐츠를 버튼을 누를 때 불러오기(2026-11-26 사용자 결정: 버튼에 개수 없음) */
+export const SIMILAR_LOADING = "찾는 중...";
+export const SIMILAR_EMPTY = "비슷한 콘텐츠가 없습니다";
+export const SIMILAR_PREPARING = "AI 검색을 준비하고 있어요. 잠시 뒤 다시 눌러 주세요.";
+/** 일반 가입자 하루 상한을 넘었을 때(데모 문구와 같은 방식) */
+export const AI_SEARCH_QUOTA_MESSAGE = "오늘 AI 검색을 쓸 수 있는 횟수를 다 썼어요. 내일 다시 써 주세요.";
